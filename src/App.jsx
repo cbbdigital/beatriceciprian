@@ -173,6 +173,26 @@ function DamaskBg() {
   );
 }
 
+function DaysCounter() {
+  const target = new Date('2026-09-12T16:30:00');
+  const now = new Date();
+  const diff = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+  if (diff <= 0) return null;
+  return (
+    <div style={{ marginTop: '1.2rem', display: 'inline-block', textAlign: 'center' }}>
+      <div style={{
+        display: 'inline-flex', alignItems: 'baseline', gap: '0.3rem',
+        padding: '0.5rem 1.4rem',
+        border: `0.5px solid ${S.border}`,
+        background: 'rgba(184,146,74,0.04)',
+      }}>
+        <span style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(1.8rem,5vw,2.4rem)', fontWeight: 300, color: S.goldDark, lineHeight: 1 }}>{diff}</span>
+        <span style={{ fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: S.gold }}>{diff === 1 ? 'zi rămasă' : 'zile rămase'}</span>
+      </div>
+    </div>
+  );
+}
+
 function FadeIn({ children, delay = 0 }) {
   const [visible, setVisible] = React.useState(false);
   useEffect(() => {
@@ -324,6 +344,7 @@ function InvitationPage({ guestName, onRSVP, onToggleMute, muted }) {
           <div style={{ margin: '1.5rem 0' }}>
             <div style={gs.dateBig}>12 Septembrie 2026</div>
             <div style={gs.dateSub}>Sâmbătă · Vă așteptăm</div>
+            <DaysCounter />
           </div>
         </FadeIn>
         <FadeIn delay={3100}><Divider /></FadeIn>
