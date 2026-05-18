@@ -677,7 +677,7 @@ function DashboardPage({ onLogout }) {
 
   const exportXLSX = () => {
     const headers = ['Nume','Email','Telefon','Status','Adulți','Copii','Mesaj','Link invitație'];
-    const baseUrl = 'https://nunta-ciprian-beatrice.netlify.app/?invite=';
+    const baseUrl = window.location.origin + '/?invite=';
     const rows = guests.map(g => [
       g.name, g.email||'', g.phone||'',
       g.attending===true?'Vine':g.attending===false?'Nu vine':'Neconfirmat',
@@ -740,6 +740,20 @@ function DashboardPage({ onLogout }) {
     const rows = guests.map(g => [g.name, g.attending===true?'Vine':g.attending===false?'Nu vine':'Neconfirmat', g.adults||0, g.children||0, (g.dietary_preferences||[]).join('; '), g.dietary_notes||'', g.message||'']);
     const csv = [headers,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv'})); a.download='nuntasi-2026.csv'; a.click();
+  };
+
+  const deleteGuest = async (id, name) => {
+    if (!window.confirm(`Ștergi invitatul "${name}"?`)) return;
+    await fetch(`${SUPABASE_URL}/rest/v1/rsvp_responses?guest_id=eq.${id}`, {
+      method: 'DELETE',
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+    });
+    await fetch(`${SUPABASE_URL}/rest/v1/guests?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+    });
+    showToast(`${name} a fost șters.`);
+    await load();
   };
 
   const filtered = guests.filter(g => filter==='all'?true:filter==='yes'?g.attending===true:filter==='no'?g.attending===false:g.attending===null);
@@ -835,7 +849,7 @@ function DashboardPage({ onLogout }) {
             <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.82rem' }}>
               <thead>
                 <tr>
-                  {['Nume','Status','Persoane','Dietă','Mesaj','Link'].map(h=>(
+                  {['Nume','Status','Persoane','Dietă','Mesaj','Link',''].map(h=>(
                     <th key={h} style={{ padding:'0.65rem 0.9rem', textAlign:'left', fontSize:'0.6rem', letterSpacing:'0.15em', textTransform:'uppercase', color:S.textLight, borderBottom:`1px solid ${S.border}`, whiteSpace:'nowrap', fontWeight:400 }}>{h}</th>
                   ))}
                 </tr>
@@ -845,7 +859,7 @@ function DashboardPage({ onLogout }) {
                   const badge = g.attending===true ? { bg:'rgba(39,174,96,0.1)', color:'#1a6b3c', label:'Vine ✓' } : g.attending===false ? { bg:'rgba(231,76,60,0.1)', color:'#922b21', label:'Nu vine' } : { bg:'rgba(184,146,74,0.15)', color:S.goldDark, label:'În așteptare' };
                   const diet = (g.dietary_preferences||[]).join(', ') || '—';
                   const persons = g.attending ? `${g.adults||0}a + ${g.children||0}c` : '—';
-                  const link = `https://nunta-ciprian-beatrice.netlify.app/?invite=${encodeURIComponent(g.slug)}`;
+                  const link = `${window.location.origin}/?invite=${encodeURIComponent(g.slug)}`;
                   return (
                     <tr key={g.id} style={{ borderBottom:`1px solid ${S.border}` }}>
                       <td style={{ padding:'0.7rem 0.9rem', fontWeight:500, color:S.text }}>{g.name}</td>
@@ -858,6 +872,11 @@ function DashboardPage({ onLogout }) {
                       <td style={{ padding:'0.7rem 0.9rem' }}>
                         <button onClick={()=>navigator.clipboard.writeText(link).then(()=>showToast('Link copiat!'))} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'0.68rem', color:S.gold, fontFamily:'inherit', letterSpacing:'0.08em', textTransform:'uppercase', padding:0 }}>
                           Copiază link
+                        </button>
+                      </td>
+                      <td style={{ padding:'0.7rem 0.9rem' }}>
+                        <button onClick={()=>deleteGuest(g.id, g.name)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'0.68rem', color:'#c0392b', fontFamily:'inherit', letterSpacing:'0.08em', textTransform:'uppercase', padding:0, opacity:0.7 }}>
+                          ✕ Șterge
                         </button>
                       </td>
                     </tr>
