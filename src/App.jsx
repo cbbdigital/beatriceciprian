@@ -190,15 +190,9 @@ function FadeIn({ children, delay = 0 }) {
   );
 }
 
-function MuteBtn({ audioRef }) {
-  const [muted, setMuted] = useState(false);
+function MuteBtn({ onToggleMute, muted }) {
   return (
-    <button
-      onClick={() => setMuted(m => {
-        const next = !m;
-        if (audioRef?.current) audioRef.current.muted = next;
-        return next;
-      })}
+    <button onClick={onToggleMute}
       style={{
         position: 'fixed', bottom: '1.2rem', right: '1.2rem', zIndex: 200,
         background: 'rgba(250,246,240,0.9)', border: `0.5px solid rgba(184,146,74,0.4)`,
@@ -226,7 +220,7 @@ function MuteBtn({ audioRef }) {
   );
 }
 
-function InvitationPage({ guestName, onRSVP, audioRef }) {
+function InvitationPage({ guestName, onRSVP, onToggleMute, muted }) {
   return (
     <div style={{...gs.page, position:'relative'}}>
       <DamaskBg />
@@ -343,7 +337,7 @@ function InvitationPage({ guestName, onRSVP, audioRef }) {
           Confirmă prezența
         </button></FadeIn>
       </div>
-      {audioRef && <MuteBtn audioRef={audioRef} />}
+      <MuteBtn onToggleMute={onToggleMute} muted={muted} />
     </div>
   );
 }
@@ -787,36 +781,16 @@ function DashboardPage({ onLogout }) {
 
 // ── APP ──
 
-function EnvelopeIntro({ onOpen, guestName }) {
+function EnvelopeIntro({ onOpen, guestName, onStartAudio, onToggleMute, muted }) {
   const [phase, setPhase] = useState('idle');
   const [particles, setParticles] = useState([]);
   const [lightRings, setLightRings] = useState([]);
-  const [muted, setMuted] = useState(false);
   const canvasRef = React.useRef(null);
-  const audioRef = React.useRef(null);
-
-  useEffect(() => {
-    const audio = new Audio('/experience.mp3');
-    audio.loop = true;
-    audio.volume = 0;
-    audioRef.current = audio;
-    return () => { audio.pause(); audio.src = ''; };
-  }, []);
 
   const handleClick = () => {
     if (phase !== 'idle') return;
     setPhase('crack');
-    // Start audio with fade in
-    const audio = audioRef.current;
-    if (audio) {
-      audio.play().catch(() => {});
-      let vol = 0;
-      const fadeIn = setInterval(() => {
-        vol = Math.min(0.35, vol + 0.01);
-        audio.volume = vol;
-        if (vol >= 0.35) clearInterval(fadeIn);
-      }, 80);
-    }
+    if (onStartAudio) onStartAudio();
     // Generate gold particles
     const pts = Array.from({ length: 60 }, (_, i) => ({
       id: i,
@@ -1078,14 +1052,7 @@ function EnvelopeIntro({ onOpen, guestName }) {
       {/* Mute button */}
       {phase !== 'idle' && phase !== 'done' && (
         <button
-          onClick={e => {
-            e.stopPropagation();
-            setMuted(m => {
-              const next = !m;
-              if (audioRef.current) audioRef.current.muted = next;
-              return next;
-            });
-          }}
+          onClick={e => { e.stopPropagation(); if (onToggleMute) onToggleMute(); }}
           style={{
             position: 'fixed', bottom: '1.5rem', right: '1.5rem',
             background: 'rgba(255,255,255,0.08)', border: '0.5px solid rgba(184,146,74,0.4)',
@@ -1140,8 +1107,38 @@ export default function App() {
   const [guestName, setGuestName] = useState('Ion Popescu');
   const [guestId] = useState(null);
   const [attending, setAttending] = useState(null);
+  const [muted, setMuted] = useState(false);
+  const globalAudioRef = useRef(null);
 
-  if (page === 'envelope') return <EnvelopeIntro guestName={guestName} onOpen={() => setPage('invitation')} />;
+  useEffect(() => {
+    const audio = new Audio('/experience.mp3');
+    audio.loop = true;
+    audio.volume = 0;
+    globalAudioRef.current = audio;
+    return () => { audio.pause(); audio.src = ''; };
+  }, []);
+
+  const startAudio = () => {
+    const audio = globalAudioRef.current;
+    if (!audio) return;
+    audio.play().catch(() => {});
+    let vol = 0;
+    const fade = setInterval(() => {
+      vol = Math.min(0.35, vol + 0.01);
+      audio.volume = vol;
+      if (vol >= 0.35) clearInterval(fade);
+    }, 80);
+  };
+
+  const toggleMute = () => {
+    setMuted(m => {
+      const next = !m;
+      if (globalAudioRef.current) globalAudioRef.current.muted = next;
+      return next;
+    });
+  };
+
+  if (page === 'envelope') return <EnvelopeIntro guestName={guestName} onOpen={() => setPage('invitation')} onStartAudio={startAudio} onToggleMute={toggleMute} muted={muted} />;
   if (page === 'invitation') return (
     <>
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: 'rgba(250,246,240,0.95)', borderBottom: '0.5px solid rgba(184,146,74,0.3)', padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.6rem', justifyContent: 'center' }}>
@@ -1156,7 +1153,7 @@ export default function App() {
         </button>
       </div>
       <div style={{ paddingTop: '3.5rem' }}>
-        <InvitationPage guestName={guestName} onRSVP={() => setPage('rsvp')} audioRef={null} />
+        <InvitationPage guestName={guestName} onRSVP={() => setPage('rsvp')} onToggleMute={toggleMute} muted={muted} />
       </div>
     </>
   );
