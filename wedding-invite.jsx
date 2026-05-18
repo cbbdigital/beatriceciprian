@@ -726,7 +726,8 @@ function EnvelopeIntro({ onOpen, guestName }) {
     <div
       onClick={handleClick}
       style={{
-        minHeight: '100vh',
+        minHeight: '100svh',
+        height: '100svh',
         background: '#1a2e1a',
         display: 'flex',
         flexDirection: 'column',
