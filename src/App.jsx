@@ -173,34 +173,57 @@ function DamaskBg() {
   );
 }
 
+function FadeIn({ children, delay = 0 }) {
+  const [visible, setVisible] = React.useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(true), delay);
+    return () => clearTimeout(t);
+  }, [delay]);
+  return (
+    <div style={{
+      opacity: visible ? 1 : 0,
+      transform: visible ? 'translateY(0)' : 'translateY(18px)',
+      transition: 'opacity 0.9s ease, transform 0.9s ease',
+    }}>
+      {children}
+    </div>
+  );
+}
+
 function InvitationPage({ guestName, onRSVP }) {
   return (
     <div style={{...gs.page, position:'relative'}}>
       <DamaskBg />
       <div style={{...gs.container, position:'relative', zIndex:1}}>
-        <div style={{ display:'flex', alignItems:'center', gap:'0.8rem', justifyContent:'center', marginBottom:'0.5rem' }}>
-          <div style={{ flex:1, maxWidth:60, height:'0.5px', background:S.borderStrong }} />
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M7 1L8 6L13 7L8 8L7 13L6 8L1 7L6 6L7 1Z" fill="#b8924a"/>
-          </svg>
-          <div style={{ flex:1, maxWidth:60, height:'0.5px', background:S.borderStrong }} />
-        </div>
-        <p style={gs.salutation}>Dragă,</p>
-        <p style={gs.guestName}>{guestName || 'Invitat Drag'}</p>
-        <Divider />
-        <div style={gs.coupleNames}>
-          Beatrice
-          <span style={gs.amp}>&amp;</span>
-          Ciprian
-        </div>
-        <Divider />
-        <p style={gs.invText}>
-          Împreună cu părinții și nașii noștri,<br />
-          te invităm să fii alături de noi<br />
-          în cea mai importantă zi din viața noastră.
-        </p>
+        <FadeIn delay={200}>
+          <div style={{ display:'flex', alignItems:'center', gap:'0.8rem', justifyContent:'center', marginBottom:'0.5rem' }}>
+            <div style={{ flex:1, maxWidth:60, height:'0.5px', background:S.borderStrong }} />
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M7 1L8 6L13 7L8 8L7 13L6 8L1 7L6 6L7 1Z" fill="#b8924a"/>
+            </svg>
+            <div style={{ flex:1, maxWidth:60, height:'0.5px', background:S.borderStrong }} />
+          </div>
+          <p style={gs.salutation}>Dragă,</p>
+          <p style={gs.guestName}>{guestName || 'Invitat Drag'}</p>
+        </FadeIn>
+        <FadeIn delay={600}><Divider /></FadeIn>
+        <FadeIn delay={900}>
+          <div style={gs.coupleNames}>
+            Beatrice
+            <span style={gs.amp}>&amp;</span>
+            Ciprian
+          </div>
+        </FadeIn>
+        <FadeIn delay={1200}><Divider /></FadeIn>
+        <FadeIn delay={1500}>
+          <p style={gs.invText}>
+            Împreună cu părinții și nașii noștri,<br />
+            te invităm să fii alături de noi<br />
+            în cea mai importantă zi din viața noastră.
+          </p>
+        </FadeIn>
 
-        <div style={{ margin: '1.8rem 0', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem 1rem', textAlign: 'center' }}>
+        <FadeIn delay={1900}><div style={{ margin: '1.8rem 0', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem 1rem', textAlign: 'center' }}>
           <div>
             <div style={{ fontSize: '0.58rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: S.gold, marginBottom: '0.4rem' }}>Părinții miresei</div>
             <div style={{ fontFamily: "Georgia, serif", fontStyle: 'italic', fontSize: '0.9rem', color: S.textMid, lineHeight: 1.6 }}>
@@ -219,8 +242,8 @@ function InvitationPage({ guestName, onRSVP }) {
               Violeta<br />& Constantin Bădic
             </div>
           </div>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 0, margin: '1.8rem 0', alignItems: 'start' }}>
+        </div></FadeIn>
+        <FadeIn delay={2300}><div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 0, margin: '1.8rem 0', alignItems: 'start' }}>
           <div style={{ padding: '0 1rem', textAlign: 'center' }}>
             <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block',margin:'0 auto 0.4rem'}}>
               <line x1="16" y1="2" x2="16" y2="10" stroke="#b8924a" strokeWidth="1.5" strokeLinecap="round"/>
@@ -266,13 +289,15 @@ function InvitationPage({ guestName, onRSVP }) {
             </a>
             <div style={{ fontSize: '0.8rem', color: S.textMid, letterSpacing: '0.08em' }}>ora 19:30</div>
           </div>
-        </div>
-        <div style={{ margin: '1.5rem 0' }}>
-          <div style={gs.dateBig}>12 Septembrie 2026</div>
-          <div style={gs.dateSub}>Sâmbătă · Vă așteptăm</div>
-        </div>
-        <Divider />
-        <button onClick={onRSVP} style={{
+        </div></FadeIn>
+        <FadeIn delay={2700}>
+          <div style={{ margin: '1.5rem 0' }}>
+            <div style={gs.dateBig}>12 Septembrie 2026</div>
+            <div style={gs.dateSub}>Sâmbătă · Vă așteptăm</div>
+          </div>
+        </FadeIn>
+        <FadeIn delay={3100}><Divider /></FadeIn>
+        <FadeIn delay={3400}><button onClick={onRSVP} style={{
           marginTop: '1.5rem', padding: '0.85rem 3rem',
           border: `1px solid ${S.gold}`, background: 'transparent',
           color: S.goldDark, fontFamily: 'inherit', fontSize: '0.75rem',
@@ -280,7 +305,7 @@ function InvitationPage({ guestName, onRSVP }) {
           cursor: 'pointer'
         }}>
           Confirmă prezența
-        </button>
+        </button></FadeIn>
       </div>
     </div>
   );
@@ -726,15 +751,53 @@ function DashboardPage({ onLogout }) {
 // ── APP ──
 
 function EnvelopeIntro({ onOpen, guestName }) {
-  const [phase, setPhase] = useState('idle'); // idle -> crack -> open -> done
+  const [phase, setPhase] = useState('idle');
+  const [particles, setParticles] = useState([]);
+  const [lightRings, setLightRings] = useState([]);
+  const canvasRef = React.useRef(null);
 
   const handleClick = () => {
     if (phase !== 'idle') return;
     setPhase('crack');
-    setTimeout(() => setPhase('open'), 900);
-    setTimeout(() => setPhase('done'), 2200);
-    setTimeout(() => onOpen(), 2600);
+    // Generate gold particles
+    const pts = Array.from({ length: 60 }, (_, i) => ({
+      id: i,
+      x: 50, y: 42,
+      angle: (Math.random() * 360),
+      speed: 1.5 + Math.random() * 4,
+      size: 2 + Math.random() * 4,
+      opacity: 1,
+      color: ['#f0d060','#c9a84c','#b8924a','#ffe080','#e8c860'][Math.floor(Math.random()*5)],
+    }));
+    setParticles(pts);
+    // Light rings
+    setLightRings([1,2,3]);
+    setTimeout(() => setPhase('open'), 1200);
+    setTimeout(() => setPhase('done'), 3500);
+    setTimeout(() => onOpen(), 5200);
   };
+
+  useEffect(() => {
+    if (phase !== 'crack' && phase !== 'open') return;
+    let frame;
+    let tick = 0;
+    const animate = () => {
+      tick++;
+      setParticles(prev => prev.map(p => {
+        const rad = p.angle * Math.PI / 180;
+        return {
+          ...p,
+          x: p.x + Math.cos(rad) * p.speed * 0.6,
+          y: p.y + Math.sin(rad) * p.speed * 0.6 + tick * 0.04,
+          opacity: Math.max(0, p.opacity - 0.012),
+          size: p.size * 0.995,
+        };
+      }));
+      frame = requestAnimationFrame(animate);
+    };
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, [phase]);
 
   const sealCracked = phase === 'crack' || phase === 'open' || phase === 'done';
   const flapOpen = phase === 'open' || phase === 'done';
@@ -744,62 +807,113 @@ function EnvelopeIntro({ onOpen, guestName }) {
     <div
       onClick={handleClick}
       style={{
-        minHeight: '100svh',
-        height: '100svh',
-        background: '#1a2e1a',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
+        minHeight: '100svh', height: '100svh',
+        background: 'radial-gradient(ellipse at 50% 60%, #1e3a1e 0%, #0d1a0d 100%)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         cursor: phase === 'idle' ? 'pointer' : 'default',
         userSelect: 'none',
-        transition: 'opacity 0.6s ease',
+        transition: 'opacity 0.2s ease 5s',
         opacity: fadeOut ? 0 : 1,
-        position: 'relative',
-        overflow: 'hidden',
+        position: 'relative', overflow: 'hidden',
       }}
     >
-      {/* Subtle texture overlay */}
-      <div style={{
-        position: 'absolute', inset: 0, opacity: 0.03,
+      {/* Animated gold dust background */}
+      <div style={{ position: 'absolute', inset: 0, opacity: 0.04,
         backgroundImage: 'radial-gradient(circle, #b8924a 1px, transparent 1px)',
-        backgroundSize: '30px 30px',
+        backgroundSize: '28px 28px',
+        animation: phase === 'idle' ? 'bgFloat 8s ease-in-out infinite' : 'none',
       }} />
 
+      {/* Light burst on crack */}
+      {sealCracked && lightRings.map((r, i) => (
+        <div key={r} style={{
+          position: 'absolute', top: '50%', left: '50%',
+          width: 10, height: 10,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(255,220,80,0.9) 0%, rgba(184,146,74,0.4) 40%, transparent 70%)',
+          transform: 'translate(-50%, -50%)',
+          animation: `lightBurst${i+1} 1.2s ease-out forwards`,
+          animationDelay: `${i * 0.15}s`,
+          zIndex: 20,
+          pointerEvents: 'none',
+        }} />
+      ))}
+
+      {/* Gold particles */}
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 15 }}>
+        {particles.map(p => (
+          <div key={p.id} style={{
+            position: 'absolute',
+            left: `${p.x}%`, top: `${p.y}%`,
+            width: p.size, height: p.size,
+            borderRadius: Math.random() > 0.5 ? '50%' : '1px',
+            background: p.color,
+            opacity: p.opacity,
+            transform: `rotate(${p.angle}deg)`,
+            boxShadow: `0 0 ${p.size * 2}px ${p.color}`,
+            transition: 'none',
+          }} />
+        ))}
+      </div>
+
+      {/* Envelope wrapper with 3D perspective */}
+      <div style={{
+        perspective: 900,
+        transform: phase === 'crack' ? 'scale(1.06)' : phase === 'open' ? 'scale(1.0)' : 'scale(1)',
+        transition: 'transform 0.6s cubic-bezier(0.34,1.56,0.64,1)',
+      }}>
       {/* Envelope SVG */}
-      <div style={{ position: 'relative', width: 320, height: 220 }}>
-        <svg viewBox="0 0 320 220" width="320" height="220" style={{ filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.5))' }}>
+      <div style={{
+        position: 'relative', width: 320, height: 220,
+        transform: flapOpen ? 'rotateY(3deg)' : 'rotateY(0deg)',
+        transition: 'transform 1.2s cubic-bezier(0.4,0,0.2,1)',
+        transformStyle: 'preserve-3d',
+      }}>
+        <svg viewBox="0 0 320 220" width="320" height="220" style={{
+          filter: `drop-shadow(0 ${flapOpen ? 30 : 20}px ${flapOpen ? 60 : 40}px rgba(0,0,0,0.6)) drop-shadow(0 0 ${sealCracked ? 20 : 0}px rgba(184,146,74,0.3))`,
+          transition: 'filter 0.8s ease',
+        }}>
           {/* Envelope body */}
           <rect x="10" y="80" width="300" height="130" rx="4" fill="#1e3a1e" stroke="#3a6b3a" strokeWidth="1.5"/>
+          {/* Gold border glow on open */}
+          {flapOpen && <rect x="10" y="80" width="300" height="130" rx="4" fill="none" stroke="#b8924a" strokeWidth="0.8" opacity="0.4"/>}
           {/* Bottom triangle folds */}
           <path d="M10 210 L160 130 L310 210Z" fill="#172e17" stroke="#3a6b3a" strokeWidth="0.8"/>
           {/* Left fold */}
           <path d="M10 80 L160 155 L10 210Z" fill="#1a321a" stroke="#3a6b3a" strokeWidth="0.8"/>
           {/* Right fold */}
           <path d="M310 80 L160 155 L310 210Z" fill="#1a321a" stroke="#3a6b3a" strokeWidth="0.8"/>
-
-          {/* Flap - animates open */}
+          {/* Flap */}
           <g style={{
             transformOrigin: '160px 80px',
-            transform: flapOpen ? 'rotateX(180deg)' : 'rotateX(0deg)',
-            transition: 'transform 0.9s cubic-bezier(0.4,0,0.2,1)',
+            transform: flapOpen ? 'rotateX(185deg)' : 'rotateX(0deg)',
+            transition: 'transform 1.4s cubic-bezier(0.4,0,0.2,1)',
             transformBox: 'fill-box',
           }}>
             <path d="M10 80 L160 170 L310 80Z" fill="#1e3a1e" stroke="#3a6b3a" strokeWidth="1.5"/>
-            {/* Flap inner shadow */}
             <path d="M30 80 L160 158 L290 80Z" fill="#172e17" opacity="0.5"/>
+            {flapOpen && <path d="M10 80 L160 170 L310 80Z" fill="none" stroke="#b8924a" strokeWidth="0.6" opacity="0.3"/>}
           </g>
+          {/* Letter peeking out when open */}
+          {flapOpen && (
+            <g style={{ animation: 'letterRise 1s 0.8s ease-out forwards', opacity: 0 }}>
+              <rect x="60" y="90" width="200" height="110" rx="2" fill="#faf6f0" opacity="0.95"/>
+              <line x1="80" y1="115" x2="240" y2="115" stroke="#d4b07a" strokeWidth="0.8" opacity="0.5"/>
+              <line x1="80" y1="128" x2="240" y2="128" stroke="#d4b07a" strokeWidth="0.8" opacity="0.5"/>
+              <line x1="80" y1="141" x2="200" y2="141" stroke="#d4b07a" strokeWidth="0.8" opacity="0.5"/>
+              <path d="M145 100 C145 100 135 93 130 96 C125 99 128 106 135 106 C140 106 145 102 145 100 C145 98 150 94 155 96 C161 99 158 106 153 106 C148 106 145 100 145 100Z" fill="#b8924a" opacity="0.6"/>
+            </g>
+          )}
         </svg>
 
         {/* Wax Seal */}
         <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -30%)',
-          transition: 'transform 0.3s ease, opacity 0.3s ease',
+          position: 'absolute', top: '50%', left: '50%',
+          transform: `translate(-50%, -30%) ${sealCracked ? 'scale(1.3) rotate(15deg)' : 'scale(1) rotate(0deg)'}`,
+          transition: 'transform 0.5s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s ease',
           opacity: sealCracked ? 0 : 1,
           zIndex: 10,
+          filter: 'drop-shadow(0 6px 16px rgba(0,0,0,0.5))',
         }}>
           <svg viewBox="0 0 90 90" width="90" height="90" style={{ filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.4))' }}>
             {/* Outer ring */}
@@ -835,57 +949,91 @@ function EnvelopeIntro({ onOpen, guestName }) {
           </svg>
         </div>
 
-        {/* Crack effect */}
+        {/* Crack effect - fragments flying */}
         {sealCracked && (
-          <div style={{
-            position: 'absolute', top: '50%', left: '50%',
-            transform: 'translate(-50%, -30%)',
-            zIndex: 10, animation: 'sealCrack 0.3s ease-out forwards',
-          }}>
-            <svg viewBox="0 0 90 90" width="90" height="90">
-              <circle cx="45" cy="45" r="42" fill="#c9a84c" opacity="0.4"/>
-              <path d="M45 20 L50 38 L65 30 L52 45 L70 50 L50 52 L55 70 L44 55 L30 65 L40 48 L22 45 L38 40Z" fill="none" stroke="#7a5c20" strokeWidth="1" opacity="0.6"/>
-            </svg>
-          </div>
+          <>
+            {[0,60,120,180,240,300].map((angle, i) => (
+              <div key={i} style={{
+                position: 'absolute', top: '50%', left: '50%',
+                zIndex: 12,
+                animation: `fragment${i} 0.8s ease-out forwards`,
+                transformOrigin: 'center',
+              }}>
+                <svg viewBox="0 0 30 30" width="28" height="28">
+                  <path d="M15 2 L22 12 L15 22 L8 12Z" fill="#c9a84c" opacity="0.8"/>
+                  <path d="M15 5 L20 12 L15 19 L10 12Z" fill="#b8924a" opacity="0.6"/>
+                </svg>
+              </div>
+            ))}
+          </>
         )}
       </div>
+      </div>{/* end 3D wrapper */}
+
+      {/* Organic paper zoom transition */}
+      {phase === 'done' && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 50,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          pointerEvents: 'none',
+        }}>
+          <div style={{
+            position: 'absolute',
+            width: '10px', height: '10px',
+            borderRadius: '50%',
+            background: '#faf6f0',
+            animation: 'paperGrow 1.4s cubic-bezier(0.22,1,0.36,1) forwards',
+          }} />
+        </div>
+      )}
 
       {/* Greeting + Hint */}
       <div style={{
-        marginTop: '2rem',
-        textAlign: 'center',
-        transition: 'opacity 0.5s',
+        marginTop: '2.5rem', textAlign: 'center',
+        transition: 'opacity 0.8s, transform 0.8s',
         opacity: phase === 'idle' ? 1 : 0,
+        transform: phase === 'idle' ? 'translateY(0)' : 'translateY(20px)',
       }}>
         <p style={{
           fontFamily: "'Great Vibes', cursive",
-          fontSize: 'clamp(1.6rem, 5vw, 2.4rem)',
-          color: 'rgba(212,176,122,0.95)',
-          marginBottom: '0.6rem',
+          fontSize: 'clamp(1.8rem, 5vw, 2.8rem)',
+          color: 'rgba(212,176,122,0.98)',
+          marginBottom: '0.8rem',
           letterSpacing: '0.02em',
+          textShadow: '0 0 30px rgba(184,146,74,0.4)',
+          animation: 'nameGlow 3s ease-in-out infinite',
         }}>
           Dragă, {guestName || 'Invitat Drag'}
         </p>
-        <p style={{
-          fontSize: '0.68rem',
-          letterSpacing: '0.3em',
-          textTransform: 'uppercase',
-          color: 'rgba(184,146,74,0.6)',
-          animation: 'pulse 2s ease-in-out infinite',
-        }}>
-          Apasă pentru a deschide
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.8rem', opacity: 0.7 }}>
+          <div style={{ width: 40, height: '0.5px', background: 'rgba(184,146,74,0.5)' }} />
+          <p style={{
+            fontSize: '0.62rem', letterSpacing: '0.35em', textTransform: 'uppercase',
+            color: 'rgba(184,146,74,0.8)', animation: 'pulse 2.5s ease-in-out infinite', margin: 0,
+          }}>
+            Apasă pentru a deschide
+          </p>
+          <div style={{ width: 40, height: '0.5px', background: 'rgba(184,146,74,0.5)' }} />
+        </div>
       </div>
 
       <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 0.5; }
-          50% { opacity: 1; }
-        }
-        @keyframes sealCrack {
-          0% { transform: translate(-50%, -30%) scale(1); opacity: 1; }
-          50% { transform: translate(-50%, -30%) scale(1.15); opacity: 0.7; }
-          100% { transform: translate(-50%, -30%) scale(0.8); opacity: 0; }
+        @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+        @keyframes bgFloat { 0%,100%{background-position:0 0} 50%{background-position:14px 14px} }
+        @keyframes nameGlow { 0%,100%{text-shadow:0 0 20px rgba(184,146,74,0.3)} 50%{text-shadow:0 0 40px rgba(184,146,74,0.7), 0 0 80px rgba(184,146,74,0.2)} }
+        @keyframes letterRise { 0%{opacity:0;transform:translateY(30px)} 100%{opacity:1;transform:translateY(0)} }
+        @keyframes lightBurst1 { 0%{width:10px;height:10px;opacity:1} 100%{width:600px;height:600px;opacity:0} }
+        @keyframes lightBurst2 { 0%{width:10px;height:10px;opacity:0.8} 100%{width:400px;height:400px;opacity:0} }
+        @keyframes lightBurst3 { 0%{width:10px;height:10px;opacity:0.6} 100%{width:250px;height:250px;opacity:0} }
+        @keyframes fragment0 { 0%{transform:translate(-50%,-50%) scale(1);opacity:1} 100%{transform:translate(calc(-50% - 80px),calc(-50% - 80px)) scale(0.3) rotate(120deg);opacity:0} }
+        @keyframes fragment1 { 0%{transform:translate(-50%,-50%) scale(1);opacity:1} 100%{transform:translate(calc(-50% + 20px),calc(-50% - 100px)) scale(0.2) rotate(-90deg);opacity:0} }
+        @keyframes fragment2 { 0%{transform:translate(-50%,-50%) scale(1);opacity:1} 100%{transform:translate(calc(-50% + 90px),calc(-50% - 60px)) scale(0.4) rotate(200deg);opacity:0} }
+        @keyframes fragment3 { 0%{transform:translate(-50%,-50%) scale(1);opacity:1} 100%{transform:translate(calc(-50% + 80px),calc(-50% + 60px)) scale(0.25) rotate(-150deg);opacity:0} }
+        @keyframes fragment4 { 0%{transform:translate(-50%,-50%) scale(1);opacity:1} 100%{transform:translate(calc(-50% - 20px),calc(-50% + 90px)) scale(0.35) rotate(80deg);opacity:0} }
+        @keyframes fragment5 { 0%{transform:translate(-50%,-50%) scale(1);opacity:1} 100%{transform:translate(calc(-50% - 90px),calc(-50% + 40px)) scale(0.2) rotate(-200deg);opacity:0} }
+        @keyframes paperGrow {
+          0%   { width:10px; height:10px; }
+          100% { width:300vmax; height:300vmax; }
         }
       `}</style>
     </div>
