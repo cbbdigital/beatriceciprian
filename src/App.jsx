@@ -496,20 +496,92 @@ function RSVPPage({ guestId, onDone, onBack }) {
 
 // ── PAGE: Thank You ──
 function ThankYouPage({ attending }) {
+  // Calendar links — 12 Sep 2026, 16:30 cununie, 19:30 petrecere
+  const title = encodeURIComponent('Nunta Beatrice & Ciprian');
+  const details = encodeURIComponent('Cununia religioasă: Biserica Sf. Teodosie, ora 16:30\nPetrecerea: Ballroom President Adjud, ora 19:30');
+  const location = encodeURIComponent('Adjud, Vrancea, România');
+  const start = '20260912T163000';
+  const end = '20260913T020000';
+
+  const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${details}&location=${location}`;
+
+  const icsContent = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'BEGIN:VEVENT',
+    `DTSTART:${start}`,
+    `DTEND:${end}`,
+    `SUMMARY:Nunta Beatrice & Ciprian`,
+    `DESCRIPTION:Cununia: Biserica Sf. Teodosie 16:30 | Petrecere: Ballroom President Adjud 19:30`,
+    `LOCATION:Adjud, Vrancea, Romania`,
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].join('\n');
+
+  const downloadIcs = () => {
+    const blob = new Blob([icsContent], { type: 'text/calendar' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'nunta-beatrice-ciprian.ics';
+    a.click();
+  };
+
+  const btnStyle = {
+    display: 'flex', alignItems: 'center', gap: '0.6rem',
+    padding: '0.75rem 1.5rem',
+    border: `1px solid ${S.border}`,
+    background: '#fff', color: S.goldDark,
+    fontFamily: 'inherit', fontSize: '0.72rem',
+    letterSpacing: '0.15em', textTransform: 'uppercase',
+    cursor: 'pointer', textDecoration: 'none',
+    transition: 'all 0.2s',
+  };
+
   return (
     <div style={{ ...gs.page, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '2rem' }}>
       <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style={{marginBottom:'1rem'}}>
-      <path d="M24 4L26.5 21.5L44 24L26.5 26.5L24 44L21.5 26.5L4 24L21.5 21.5L24 4Z" stroke="#b8924a" strokeWidth="1.5" strokeLinejoin="round" fill="rgba(184,146,74,0.1)"/>
-      <path d="M24 10L25.5 22.5L38 24L25.5 25.5L24 38L22.5 25.5L10 24L22.5 22.5L24 10Z" fill="#b8924a" opacity="0.3"/>
-    </svg>
+        <path d="M24 4L26.5 21.5L44 24L26.5 26.5L24 44L21.5 26.5L4 24L21.5 21.5L24 4Z" stroke="#b8924a" strokeWidth="1.5" strokeLinejoin="round" fill="rgba(184,146,74,0.1)"/>
+        <path d="M24 10L25.5 22.5L38 24L25.5 25.5L24 38L22.5 25.5L10 24L22.5 22.5L24 10Z" fill="#b8924a" opacity="0.3"/>
+      </svg>
       <h1 style={{ fontFamily: 'Georgia,serif', fontSize: 'clamp(2rem,6vw,3rem)', fontWeight: 300, color: S.text, marginBottom: '0.5rem' }}>
         {attending ? 'Ne bucurăm!' : 'Cu regret...'}
       </h1>
-      <p style={{ fontStyle: 'italic', fontSize: '1.1rem', color: S.textMid, maxWidth: 380, lineHeight: 1.7 }}>
+      <p style={{ fontStyle: 'italic', fontSize: '1.1rem', color: S.textMid, maxWidth: 380, lineHeight: 1.7, marginBottom: attending ? '2rem' : '0' }}>
         {attending
           ? 'Inimile noastre sunt pline de bucurie! Abia așteptăm să sărbătorim alături de tine pe 12 septembrie 2026. Te îmbrățișăm cu drag, Beatrice & Ciprian'
           : 'Îți mulțumim că ne-ai anunțat. Deși ne pare nespus de rău că nu vei putea fi alături de noi, gândurile noastre bune te vor însoți mereu. Cu drag, Beatrice & Ciprian'}
       </p>
+
+      {attending && (
+        <>
+          <div style={{ fontSize: '0.62rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: S.gold, marginBottom: '1rem' }}>
+            Salvează în calendar
+          </div>
+          <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+            {/* Google Calendar */}
+            <a href={googleUrl} target="_blank" rel="noopener noreferrer" style={btnStyle}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="4" width="18" height="18" rx="2" stroke="#b8924a" strokeWidth="1.5"/>
+                <line x1="3" y1="9" x2="21" y2="9" stroke="#b8924a" strokeWidth="1.5"/>
+                <line x1="8" y1="2" x2="8" y2="6" stroke="#b8924a" strokeWidth="1.5" strokeLinecap="round"/>
+                <line x1="16" y1="2" x2="16" y2="6" stroke="#b8924a" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+              Google Calendar
+            </a>
+            {/* Apple / Outlook .ics */}
+            <button onClick={downloadIcs} style={btnStyle}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="4" width="18" height="18" rx="2" stroke="#b8924a" strokeWidth="1.5"/>
+                <line x1="3" y1="9" x2="21" y2="9" stroke="#b8924a" strokeWidth="1.5"/>
+                <line x1="8" y1="2" x2="8" y2="6" stroke="#b8924a" strokeWidth="1.5" strokeLinecap="round"/>
+                <line x1="16" y1="2" x2="16" y2="6" stroke="#b8924a" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M12 13v4M10 15l2 2 2-2" stroke="#b8924a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Apple / Outlook
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
