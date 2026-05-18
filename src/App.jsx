@@ -653,9 +653,317 @@ if (typeof window !== 'undefined' && !window._xlsxLoaded) {
   XLSX = window.XLSX;
 }
 
+
+// ── SEATING EDITOR ──
+async function fetchTables() {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/seating_tables?select=*&order=created_at.asc`, { headers:{ apikey:SUPABASE_KEY, Authorization:`Bearer ${SUPABASE_KEY}` } });
+  return r.json();
+}
+async function fetchAssignments() {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/seating_assignments?select=*`, { headers:{ apikey:SUPABASE_KEY, Authorization:`Bearer ${SUPABASE_KEY}` } });
+  return r.json();
+}
+
+function SeatingEditor({ guests }) {
+  const [tables, setTables] = useState([]);
+  const [assignments, setAssignments] = useState([]);
+  const [draggingTable, setDraggingTable] = useState(null);
+  const [dragOffset, setDragOffset] = useState({x:0,y:0});
+  const [selectedSeat, setSelectedSeat] = useState(null); // {tableId, seatIndex}
+  const [editingTable, setEditingTable] = useState(null);
+  const canvasRef = useRef(null);
+  const CANVAS_W = 900, CANVAS_H = 600;
+
+  useEffect(() => { loadAll(); }, []);
+
+  const loadAll = async () => {
+    const [t, a] = await Promise.all([fetchTables(), fetchAssignments()]);
+    setTables(Array.isArray(t) ? t : []);
+    setAssignments(Array.isArray(a) ? a : []);
+  };
+
+  const addTable = async () => {
+    const name = `Masa ${tables.length + 1}`;
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/seating_tables`, {
+      method:'POST', headers:{ apikey:SUPABASE_KEY, Authorization:`Bearer ${SUPABASE_KEY}`, 'Content-Type':'application/json', Prefer:'return=representation' },
+      body: JSON.stringify({ name, seats:10, x: 150 + (tables.length % 4)*180, y: 150 + Math.floor(tables.length/4)*200 })
+    });
+    const d = await r.json();
+    setTables(prev => [...prev, Array.isArray(d) ? d[0] : d]);
+  };
+
+  const deleteTable = async (id) => {
+    if (!window.confirm('Ștergi masa?')) return;
+    await fetch(`${SUPABASE_URL}/rest/v1/seating_tables?id=eq.${id}`, { method:'DELETE', headers:{ apikey:SUPABASE_KEY, Authorization:`Bearer ${SUPABASE_KEY}` } });
+    setTables(prev => prev.filter(t => t.id !== id));
+    setAssignments(prev => prev.filter(a => a.table_id !== id));
+  };
+
+  const saveTablePos = async (id, x, y) => {
+    await fetch(`${SUPABASE_URL}/rest/v1/seating_tables?id=eq.${id}`, {
+      method:'PATCH', headers:{ apikey:SUPABASE_KEY, Authorization:`Bearer ${SUPABASE_KEY}`, 'Content-Type':'application/json' },
+      body: JSON.stringify({ x, y })
+    });
+  };
+
+  const saveTableName = async (id, name, seats) => {
+    await fetch(`${SUPABASE_URL}/rest/v1/seating_tables?id=eq.${id}`, {
+      method:'PATCH', headers:{ apikey:SUPABASE_KEY, Authorization:`Bearer ${SUPABASE_KEY}`, 'Content-Type':'application/json' },
+      body: JSON.stringify({ name, seats: parseInt(seats)||10 })
+    });
+    setTables(prev => prev.map(t => t.id===id ? {...t, name, seats:parseInt(seats)||10} : t));
+    setEditingTable(null);
+    loadAll();
+  };
+
+  const assignGuest = async (tableId, seatIndex, guestId) => {
+    // Remove existing assignment for this seat
+    await fetch(`${SUPABASE_URL}/rest/v1/seating_assignments?table_id=eq.${tableId}&seat_index=eq.${seatIndex}`, {
+      method:'DELETE', headers:{ apikey:SUPABASE_KEY, Authorization:`Bearer ${SUPABASE_KEY}` }
+    });
+    if (guestId) {
+      // Remove guest from any other seat
+      await fetch(`${SUPABASE_URL}/rest/v1/seating_assignments?guest_id=eq.${guestId}`, {
+        method:'DELETE', headers:{ apikey:SUPABASE_KEY, Authorization:`Bearer ${SUPABASE_KEY}` }
+      });
+      await fetch(`${SUPABASE_URL}/rest/v1/seating_assignments`, {
+        method:'POST', headers:{ apikey:SUPABASE_KEY, Authorization:`Bearer ${SUPABASE_KEY}`, 'Content-Type':'application/json' },
+        body: JSON.stringify({ table_id:tableId, guest_id:guestId, seat_index:seatIndex })
+      });
+    }
+    await loadAll();
+    setSelectedSeat(null);
+  };
+
+  // Mouse drag handlers
+  const onMouseDown = (e, table) => {
+    e.preventDefault();
+    const rect = canvasRef.current.getBoundingClientRect();
+    const scaleX = CANVAS_W / rect.width;
+    const scaleY = CANVAS_H / rect.height;
+    setDraggingTable(table.id);
+    setDragOffset({ x: (e.clientX - rect.left)*scaleX - table.x, y: (e.clientY - rect.top)*scaleY - table.y });
+  };
+
+  const onMouseMove = (e) => {
+    if (!draggingTable) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const scaleX = CANVAS_W / rect.width;
+    const scaleY = CANVAS_H / rect.height;
+    const x = Math.max(60, Math.min(CANVAS_W-60, (e.clientX - rect.left)*scaleX - dragOffset.x));
+    const y = Math.max(60, Math.min(CANVAS_H-60, (e.clientY - rect.top)*scaleY - dragOffset.y));
+    setTables(prev => prev.map(t => t.id===draggingTable ? {...t, x, y} : t));
+  };
+
+  const onMouseUp = () => {
+    if (draggingTable) {
+      const t = tables.find(t => t.id===draggingTable);
+      if (t) saveTablePos(t.id, t.x, t.y);
+      setDraggingTable(null);
+    }
+  };
+
+  // Touch handlers
+  const onTouchStart = (e, table) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const scaleX = CANVAS_W / rect.width;
+    const scaleY = CANVAS_H / rect.height;
+    const touch = e.touches[0];
+    setDraggingTable(table.id);
+    setDragOffset({ x: (touch.clientX - rect.left)*scaleX - table.x, y: (touch.clientY - rect.top)*scaleY - table.y });
+  };
+  const onTouchMove = (e) => {
+    if (!draggingTable) return;
+    e.preventDefault();
+    const rect = canvasRef.current.getBoundingClientRect();
+    const scaleX = CANVAS_W / rect.width;
+    const scaleY = CANVAS_H / rect.height;
+    const touch = e.touches[0];
+    const x = Math.max(60, Math.min(CANVAS_W-60, (touch.clientX - rect.left)*scaleX - dragOffset.x));
+    const y = Math.max(60, Math.min(CANVAS_H-60, (touch.clientY - rect.top)*scaleY - dragOffset.y));
+    setTables(prev => prev.map(t => t.id===draggingTable ? {...t, x, y} : t));
+  };
+  const onTouchEnd = () => onMouseUp();
+
+  const getAssignedGuest = (tableId, seatIndex) => {
+    const a = assignments.find(a => a.table_id===tableId && a.seat_index===seatIndex);
+    if (!a || !a.guest_id) return null;
+    return guests.find(g => g.id===a.guest_id);
+  };
+
+  const assignedGuestIds = new Set(assignments.filter(a=>a.guest_id).map(a=>a.guest_id));
+  const unassignedGuests = guests.filter(g => !assignedGuestIds.has(g.id));
+
+  const TABLE_R = 42;
+  const SEAT_R = 16;
+
+  return (
+    <div style={{ maxWidth:900, margin:'0 auto' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1rem', flexWrap:'wrap', gap:'0.5rem' }}>
+        <div style={{ fontSize:'0.65rem', letterSpacing:'0.2em', textTransform:'uppercase', color:S.gold }}>
+          Plan sală · drag pentru a muta mesele
+        </div>
+        <button onClick={addTable} style={{ padding:'0.45rem 1.2rem', background:S.gold, border:'none', color:'#fff', fontFamily:'inherit', fontSize:'0.7rem', letterSpacing:'0.15em', textTransform:'uppercase', cursor:'pointer' }}>
+          + Masă nouă
+        </button>
+      </div>
+
+      {/* Canvas */}
+      <div
+        ref={canvasRef}
+        onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseUp}
+        onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
+        style={{ width:'100%', aspectRatio:`${CANVAS_W}/${CANVAS_H}`, background:'#f8f4ee', border:`1px solid ${S.border}`, position:'relative', overflow:'hidden', cursor: draggingTable ? 'grabbing' : 'default', userSelect:'none', touchAction:'none' }}
+      >
+        <svg viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`} style={{ width:'100%', height:'100%', position:'absolute', top:0, left:0 }}>
+          {/* Grid dots */}
+          {Array.from({length:18},(_,i)=>Array.from({length:12},(_,j)=>(
+            <circle key={`${i}-${j}`} cx={i*52+26} cy={j*52+26} r="1.5" fill={S.border} opacity="0.5"/>
+          )))}
+
+          {tables.map(table => {
+            const seats = table.seats || 10;
+            return (
+              <g key={table.id}
+                onMouseDown={e => onMouseDown(e, table)}
+                onTouchStart={e => onTouchStart(e, table)}
+                style={{ cursor:'grab' }}
+              >
+                {/* Seats */}
+                {Array.from({length:seats},(_,i) => {
+                  const angle = (i/seats)*2*Math.PI - Math.PI/2;
+                  const sx = table.x + (TABLE_R+SEAT_R+6)*Math.cos(angle);
+                  const sy = table.y + (TABLE_R+SEAT_R+6)*Math.sin(angle);
+                  const guest = getAssignedGuest(table.id, i);
+                  const isSelected = selectedSeat?.tableId===table.id && selectedSeat?.seatIndex===i;
+                  return (
+                    <g key={i} onClick={e => { e.stopPropagation(); if (!draggingTable) setSelectedSeat({tableId:table.id, seatIndex:i}); }}>
+                      <circle cx={sx} cy={sy} r={SEAT_R}
+                        fill={guest ? 'rgba(184,146,74,0.15)' : '#fff'}
+                        stroke={isSelected ? S.gold : guest ? S.gold : S.border}
+                        strokeWidth={isSelected ? 2 : 1}
+                        style={{ cursor:'pointer' }}
+                      />
+                      {guest ? (
+                        <text x={sx} y={sy} textAnchor="middle" dominantBaseline="middle"
+                          fontSize="7" fill={S.goldDark} fontFamily="Georgia,serif"
+                          style={{ pointerEvents:'none' }}>
+                          {guest.name.split(' ')[0].slice(0,8)}
+                        </text>
+                      ) : (
+                        <text x={sx} y={sy} textAnchor="middle" dominantBaseline="middle"
+                          fontSize="9" fill={S.border} style={{ pointerEvents:'none' }}>+</text>
+                      )}
+                    </g>
+                  );
+                })}
+
+                {/* Table circle */}
+                <circle cx={table.x} cy={table.y} r={TABLE_R}
+                  fill="#fff" stroke={S.gold} strokeWidth="1.5"
+                />
+                <text x={table.x} y={table.y-8} textAnchor="middle" fontSize="11" fill={S.goldDark} fontFamily="Georgia,serif" fontWeight="600">
+                  {table.name}
+                </text>
+                <text x={table.x} y={table.y+8} textAnchor="middle" fontSize="9" fill={S.textLight} fontFamily="Georgia,serif">
+                  {assignments.filter(a=>a.table_id===table.id && a.guest_id).length}/{seats}
+                </text>
+
+                {/* Edit / delete icons */}
+                <g onClick={e=>{e.stopPropagation(); setEditingTable(table);}} style={{cursor:'pointer'}}>
+                  <circle cx={table.x+TABLE_R-8} cy={table.y-TABLE_R+8} r="10" fill="rgba(184,146,74,0.15)" stroke={S.border}/>
+                  <text x={table.x+TABLE_R-8} y={table.y-TABLE_R+8} textAnchor="middle" dominantBaseline="middle" fontSize="9" fill={S.gold}>✎</text>
+                </g>
+                <g onClick={e=>{e.stopPropagation(); deleteTable(table.id);}} style={{cursor:'pointer'}}>
+                  <circle cx={table.x-TABLE_R+8} cy={table.y-TABLE_R+8} r="10" fill="rgba(231,76,60,0.1)" stroke="rgba(231,76,60,0.3)"/>
+                  <text x={table.x-TABLE_R+8} y={table.y-TABLE_R+8} textAnchor="middle" dominantBaseline="middle" fontSize="10" fill="#c0392b">×</text>
+                </g>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+
+      {/* Seat assignment popup */}
+      {selectedSeat && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.3)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center' }}
+          onClick={() => setSelectedSeat(null)}>
+          <div style={{ background:'#fff', border:`1px solid ${S.border}`, padding:'1.5rem', width:300, maxHeight:'80vh', overflowY:'auto' }}
+            onClick={e=>e.stopPropagation()}>
+            <div style={{ fontSize:'0.65rem', letterSpacing:'0.2em', textTransform:'uppercase', color:S.gold, marginBottom:'1rem' }}>
+              Atribuie loc · {tables.find(t=>t.id===selectedSeat.tableId)?.name} · Scaun {selectedSeat.seatIndex+1}
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:'0.4rem' }}>
+              <button onClick={() => assignGuest(selectedSeat.tableId, selectedSeat.seatIndex, null)}
+                style={{ padding:'0.5rem', border:`1px solid ${S.border}`, background:'#fff', cursor:'pointer', fontFamily:'inherit', fontSize:'0.8rem', color:S.textLight, textAlign:'left' }}>
+                — Gol
+              </button>
+              {guests.map(g => {
+                const isHere = assignments.some(a=>a.guest_id===g.id && a.table_id===selectedSeat.tableId && a.seat_index===selectedSeat.seatIndex);
+                const assigned = assignedGuestIds.has(g.id) && !isHere;
+                return (
+                  <button key={g.id} onClick={() => assignGuest(selectedSeat.tableId, selectedSeat.seatIndex, g.id)}
+                    style={{ padding:'0.5rem 0.8rem', border:`1px solid ${isHere?S.gold:S.border}`, background: isHere?'rgba(184,146,74,0.08)':'#fff', cursor:'pointer', fontFamily:'inherit', fontSize:'0.85rem', color: assigned ? S.textLight : S.text, textAlign:'left', display:'flex', justifyContent:'space-between' }}>
+                    <span>{g.name}</span>
+                    {assigned && <span style={{fontSize:'0.65rem', color:S.textLight}}>deja asignat</span>}
+                    {isHere && <span style={{fontSize:'0.65rem', color:S.gold}}>✓ aici</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit table popup */}
+      {editingTable && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.3)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center' }}
+          onClick={() => setEditingTable(null)}>
+          <div style={{ background:'#fff', border:`1px solid ${S.border}`, padding:'1.5rem', width:280 }} onClick={e=>e.stopPropagation()}>
+            <div style={{ fontSize:'0.65rem', letterSpacing:'0.2em', textTransform:'uppercase', color:S.gold, marginBottom:'1rem' }}>Editează masa</div>
+            <input defaultValue={editingTable.name} id="edit-table-name"
+              style={{ width:'100%', padding:'0.6rem', border:`1px solid ${S.border}`, fontFamily:'inherit', fontSize:'0.9rem', marginBottom:'0.8rem', boxSizing:'border-box', outline:'none' }}
+              placeholder="Numele mesei"/>
+            <input defaultValue={editingTable.seats} id="edit-table-seats" type="number" min="4" max="20"
+              style={{ width:'100%', padding:'0.6rem', border:`1px solid ${S.border}`, fontFamily:'inherit', fontSize:'0.9rem', marginBottom:'1rem', boxSizing:'border-box', outline:'none' }}
+              placeholder="Număr scaune"/>
+            <div style={{ display:'flex', gap:'0.5rem' }}>
+              <button onClick={() => saveTableName(editingTable.id, document.getElementById('edit-table-name').value, document.getElementById('edit-table-seats').value)}
+                style={{ flex:1, padding:'0.6rem', background:S.gold, border:'none', color:'#fff', fontFamily:'inherit', fontSize:'0.72rem', letterSpacing:'0.15em', textTransform:'uppercase', cursor:'pointer' }}>
+                Salvează
+              </button>
+              <button onClick={() => setEditingTable(null)}
+                style={{ padding:'0.6rem 1rem', background:'none', border:`1px solid ${S.border}`, fontFamily:'inherit', fontSize:'0.72rem', cursor:'pointer', color:S.textMid }}>
+                Anulează
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Unassigned guests */}
+      {unassignedGuests.length > 0 && (
+        <div style={{ marginTop:'1.5rem' }}>
+          <div style={{ fontSize:'0.65rem', letterSpacing:'0.2em', textTransform:'uppercase', color:S.gold, marginBottom:'0.6rem', paddingBottom:'0.4rem', borderBottom:`1px solid ${S.border}` }}>
+            Neasignați ({unassignedGuests.length})
+          </div>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:'0.4rem' }}>
+            {unassignedGuests.map(g => (
+              <span key={g.id} style={{ padding:'0.3rem 0.7rem', border:`1px solid ${S.border}`, fontSize:'0.78rem', color:S.textMid, background:'#fff' }}>
+                {g.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DashboardPage({ onLogout }) {
   const [guests, setGuests] = useState([]);
   const [filter, setFilter] = useState('all');
+  const [view, setView] = useState('guests'); // 'guests' | 'seating'
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
@@ -843,6 +1151,20 @@ function DashboardPage({ onLogout }) {
           </div>
         )}
 
+        {/* View tabs */}
+        <div style={{ display:'flex', gap:'0', marginBottom:'1.5rem', borderBottom:`1px solid ${S.border}` }}>
+          {[['guests','Lista invitaților'],['seating','Aranjament la masă']].map(([val,label]) => (
+            <button key={val} onClick={() => setView(val)} style={{
+              padding:'0.6rem 1.4rem', background:'none', border:'none', borderBottom: view===val ? `2px solid ${S.gold}` : '2px solid transparent',
+              fontFamily:'inherit', fontSize:'0.72rem', letterSpacing:'0.15em', textTransform:'uppercase',
+              color: view===val ? S.goldDark : S.textLight, cursor:'pointer', marginBottom:'-1px',
+            }}>{label}</button>
+          ))}
+        </div>
+
+        {view === 'seating' && <SeatingEditor guests={guests} />}
+
+        {view === 'guests' && <>
         {/* Table */}
         <div style={{ fontSize:'0.65rem', letterSpacing:'0.2em', textTransform:'uppercase', color:S.gold, marginBottom:'0.6rem', paddingBottom:'0.4rem', borderBottom:`1px solid ${S.border}` }}>Lista invitaților</div>
         <div style={{ display:'flex', gap:'0.4rem', marginBottom:'0.8rem', flexWrap:'wrap' }}>
@@ -913,6 +1235,7 @@ function DashboardPage({ onLogout }) {
             </table>
           )}
         </div>
+        </>}
       </div>
     </div>
   );
