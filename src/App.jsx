@@ -1230,24 +1230,7 @@ export default function App() {
   };
 
   if (page === 'envelope') return <EnvelopeIntro guestName={guestName} onOpen={() => setPage('invitation')} onStartAudio={startAudio} onToggleMute={toggleMute} muted={muted} />;
-  if (page === 'invitation') return (
-    <>
-      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: 'rgba(250,246,240,0.95)', borderBottom: '0.5px solid rgba(184,146,74,0.3)', padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.6rem', justifyContent: 'center' }}>
-        <span style={{ fontSize: '0.62rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#a0856a', whiteSpace: 'nowrap' }}>Preview invitat:</span>
-        <input
-          value={guestName}
-          onChange={e => setGuestName(e.target.value)}
-          style={{ border: '0.5px solid rgba(184,146,74,0.5)', background: 'transparent', padding: '0.25rem 0.6rem', fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '0.95rem', color: '#8a6a2e', outline: 'none', minWidth: 160, textAlign: 'center' }}
-        />
-        <button onClick={() => setPage('dashboard')} style={{ marginLeft: '0.5rem', padding: '0.25rem 0.9rem', border: '0.5px solid rgba(184,146,74,0.6)', background: 'transparent', fontFamily: 'inherit', fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#8a6a2e', cursor: 'pointer' }}>
-          Dashboard →
-        </button>
-      </div>
-      <div style={{ paddingTop: '3.5rem' }}>
-        <InvitationPage guestName={guestName} onRSVP={() => setPage('rsvp')} onToggleMute={toggleMute} muted={muted} />
-      </div>
-    </>
-  );
+  if (page === 'invitation') return <InvitationPage guestName={guestName} onRSVP={() => setPage('rsvp')} onToggleMute={toggleMute} muted={muted} />;
   if (page === 'rsvp') return <RSVPPage guestId={guestId} onDone={(a) => { setAttending(a); setPage('thankyou'); }} onBack={() => setPage('invitation')} />;
   if (page === 'thankyou') return <ThankYouPage attending={attending} />;
   if (page === 'admin-login') return <AdminLoginPage onLogin={() => setPage('dashboard')} onBack={() => setPage('invitation')} />;
