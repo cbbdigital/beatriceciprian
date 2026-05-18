@@ -756,6 +756,15 @@ function DashboardPage({ onLogout }) {
     await load();
   };
 
+  const toggleLinkSent = async (id, current) => {
+    await fetch(`${SUPABASE_URL}/rest/v1/guests?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: JSON.stringify({ link_sent: !current })
+    });
+    setGuests(prev => prev.map(g => g.id === id ? { ...g, link_sent: !current } : g));
+  };
+
   const filtered = guests.filter(g => filter==='all'?true:filter==='yes'?g.attending===true:filter==='no'?g.attending===false:g.attending===null);
   const yes = guests.filter(g=>g.attending===true);
   const no = guests.filter(g=>g.attending===false);
@@ -849,7 +858,7 @@ function DashboardPage({ onLogout }) {
             <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.82rem' }}>
               <thead>
                 <tr>
-                  {['Nume','Status','Persoane','Dietă','Mesaj','Link',''].map(h=>(
+                  {['Nume','Status','Persoane','Dietă','Mesaj','Trimis','Link',''].map(h=>(
                     <th key={h} style={{ padding:'0.65rem 0.9rem', textAlign:'left', fontSize:'0.6rem', letterSpacing:'0.15em', textTransform:'uppercase', color:S.textLight, borderBottom:`1px solid ${S.border}`, whiteSpace:'nowrap', fontWeight:400 }}>{h}</th>
                   ))}
                 </tr>
@@ -869,6 +878,24 @@ function DashboardPage({ onLogout }) {
                       <td style={{ padding:'0.7rem 0.9rem', color:S.textMid }}>{persons}</td>
                       <td style={{ padding:'0.7rem 0.9rem', fontSize:'0.74rem', color:S.textMid, maxWidth:140, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={diet}>{diet}</td>
                       <td style={{ padding:'0.7rem 0.9rem', fontSize:'0.74rem', color:S.textMid, maxWidth:120, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={g.message||''}>{g.message ? (g.message.length>28?g.message.slice(0,28)+'…':g.message) : '—'}</td>
+                      <td style={{ padding:'0.7rem 0.9rem', textAlign:'center' }}>
+                        <div
+                          onClick={() => toggleLinkSent(g.id, g.link_sent)}
+                          style={{
+                            width: 22, height: 22, margin: '0 auto',
+                            border: `1.5px solid ${g.link_sent ? S.gold : S.border}`,
+                            background: g.link_sent ? S.gold : '#fff',
+                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          {g.link_sent && (
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                              <path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          )}
+                        </div>
+                      </td>
                       <td style={{ padding:'0.7rem 0.9rem' }}>
                         <button onClick={()=>navigator.clipboard.writeText(link).then(()=>showToast('Link copiat!'))} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'0.68rem', color:S.gold, fontFamily:'inherit', letterSpacing:'0.08em', textTransform:'uppercase', padding:0 }}>
                           Copiază link
