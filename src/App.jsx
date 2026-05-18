@@ -190,7 +190,43 @@ function FadeIn({ children, delay = 0 }) {
   );
 }
 
-function InvitationPage({ guestName, onRSVP }) {
+function MuteBtn({ audioRef }) {
+  const [muted, setMuted] = useState(false);
+  return (
+    <button
+      onClick={() => setMuted(m => {
+        const next = !m;
+        if (audioRef?.current) audioRef.current.muted = next;
+        return next;
+      })}
+      style={{
+        position: 'fixed', bottom: '1.2rem', right: '1.2rem', zIndex: 200,
+        background: 'rgba(250,246,240,0.9)', border: `0.5px solid rgba(184,146,74,0.4)`,
+        borderRadius: '50%', width: 36, height: 36,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+      }}
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        {muted ? (
+          <>
+            <path d="M11 5L6 9H2v6h4l5 4V5Z" fill="#b8924a"/>
+            <line x1="23" y1="9" x2="17" y2="15" stroke="#b8924a" strokeWidth="2" strokeLinecap="round"/>
+            <line x1="17" y1="9" x2="23" y2="15" stroke="#b8924a" strokeWidth="2" strokeLinecap="round"/>
+          </>
+        ) : (
+          <>
+            <path d="M11 5L6 9H2v6h4l5 4V5Z" fill="#b8924a"/>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke="#b8924a" strokeWidth="1.5" strokeLinecap="round"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14" stroke="#b8924a" strokeWidth="1.5" strokeLinecap="round"/>
+          </>
+        )}
+      </svg>
+    </button>
+  );
+}
+
+function InvitationPage({ guestName, onRSVP, audioRef }) {
   return (
     <div style={{...gs.page, position:'relative'}}>
       <DamaskBg />
@@ -307,6 +343,7 @@ function InvitationPage({ guestName, onRSVP }) {
           Confirmă prezența
         </button></FadeIn>
       </div>
+      {audioRef && <MuteBtn audioRef={audioRef} />}
     </div>
   );
 }
@@ -754,11 +791,32 @@ function EnvelopeIntro({ onOpen, guestName }) {
   const [phase, setPhase] = useState('idle');
   const [particles, setParticles] = useState([]);
   const [lightRings, setLightRings] = useState([]);
+  const [muted, setMuted] = useState(false);
   const canvasRef = React.useRef(null);
+  const audioRef = React.useRef(null);
+
+  useEffect(() => {
+    const audio = new Audio('/experience.mp3');
+    audio.loop = true;
+    audio.volume = 0;
+    audioRef.current = audio;
+    return () => { audio.pause(); audio.src = ''; };
+  }, []);
 
   const handleClick = () => {
     if (phase !== 'idle') return;
     setPhase('crack');
+    // Start audio with fade in
+    const audio = audioRef.current;
+    if (audio) {
+      audio.play().catch(() => {});
+      let vol = 0;
+      const fadeIn = setInterval(() => {
+        vol = Math.min(0.35, vol + 0.01);
+        audio.volume = vol;
+        if (vol >= 0.35) clearInterval(fadeIn);
+      }, 80);
+    }
     // Generate gold particles
     const pts = Array.from({ length: 60 }, (_, i) => ({
       id: i,
@@ -1017,6 +1075,43 @@ function EnvelopeIntro({ onOpen, guestName }) {
         </div>
       </div>
 
+      {/* Mute button */}
+      {phase !== 'idle' && phase !== 'done' && (
+        <button
+          onClick={e => {
+            e.stopPropagation();
+            setMuted(m => {
+              const next = !m;
+              if (audioRef.current) audioRef.current.muted = next;
+              return next;
+            });
+          }}
+          style={{
+            position: 'fixed', bottom: '1.5rem', right: '1.5rem',
+            background: 'rgba(255,255,255,0.08)', border: '0.5px solid rgba(184,146,74,0.4)',
+            borderRadius: '50%', width: 40, height: 40,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', zIndex: 200, backdropFilter: 'blur(4px)',
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            {muted ? (
+              <>
+                <path d="M11 5L6 9H2v6h4l5 4V5Z" fill="#b8924a"/>
+                <line x1="23" y1="9" x2="17" y2="15" stroke="#b8924a" strokeWidth="2" strokeLinecap="round"/>
+                <line x1="17" y1="9" x2="23" y2="15" stroke="#b8924a" strokeWidth="2" strokeLinecap="round"/>
+              </>
+            ) : (
+              <>
+                <path d="M11 5L6 9H2v6h4l5 4V5Z" fill="#b8924a"/>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke="#b8924a" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14" stroke="#b8924a" strokeWidth="1.5" strokeLinecap="round"/>
+              </>
+            )}
+          </svg>
+        </button>
+      )}
+
       <style>{`
         @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
         @keyframes bgFloat { 0%,100%{background-position:0 0} 50%{background-position:14px 14px} }
@@ -1061,7 +1156,7 @@ export default function App() {
         </button>
       </div>
       <div style={{ paddingTop: '3.5rem' }}>
-        <InvitationPage guestName={guestName} onRSVP={() => setPage('rsvp')} />
+        <InvitationPage guestName={guestName} onRSVP={() => setPage('rsvp')} audioRef={null} />
       </div>
     </>
   );
