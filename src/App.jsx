@@ -1156,10 +1156,22 @@ function DashboardPage({ onLogout }) {
 
         {/* Stats */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(120px,1fr))', gap:'0.8rem', marginBottom:'1.8rem' }}>
-          {statCard(guests.length,'Invitați totali')}
-          {statCard(yes.length,'Confirmați ✓')}
-          {statCard(no.length,'Refuzați')}
-          {statCard(pend.length,'Fără răspuns')}
+          <div onClick={() => { setView('guests'); setFilter('all'); setSearch(''); }} style={{ background:'#fff', border:`1px solid ${S.border}`, padding:'1.1rem 0.8rem', textAlign:'center', cursor:'pointer' }}>
+            <div style={{ fontFamily:'Georgia,serif', fontSize:'2.2rem', fontWeight:600, color:S.goldDark, lineHeight:1 }}>{guests.length}</div>
+            <div style={{ fontSize:'0.62rem', letterSpacing:'0.18em', textTransform:'uppercase', color:S.textLight, marginTop:'0.3rem' }}>Invitați totali</div>
+          </div>
+          <div onClick={() => { setView('guests'); setFilter('yes'); setSearch(''); }} style={{ background:'rgba(39,174,96,0.04)', border:`1px solid rgba(39,174,96,0.2)`, padding:'1.1rem 0.8rem', textAlign:'center', cursor:'pointer' }}>
+            <div style={{ fontFamily:'Georgia,serif', fontSize:'2.2rem', fontWeight:600, color:'#1a6b3c', lineHeight:1 }}>{yes.length}</div>
+            <div style={{ fontSize:'0.62rem', letterSpacing:'0.18em', textTransform:'uppercase', color:'#1a6b3c', marginTop:'0.3rem', opacity:0.7 }}>Confirmați ✓</div>
+          </div>
+          <div onClick={() => { setView('guests'); setFilter('no'); setSearch(''); }} style={{ background:'rgba(231,76,60,0.04)', border:`1px solid rgba(231,76,60,0.2)`, padding:'1.1rem 0.8rem', textAlign:'center', cursor:'pointer' }}>
+            <div style={{ fontFamily:'Georgia,serif', fontSize:'2.2rem', fontWeight:600, color:'#922b21', lineHeight:1 }}>{no.length}</div>
+            <div style={{ fontSize:'0.62rem', letterSpacing:'0.18em', textTransform:'uppercase', color:'#922b21', marginTop:'0.3rem', opacity:0.7 }}>Refuzați</div>
+          </div>
+          <div onClick={() => { setView('guests'); setFilter('pending'); setSearch(''); }} style={{ background:'rgba(184,146,74,0.04)', border:`1px solid ${S.border}`, padding:'1.1rem 0.8rem', textAlign:'center', cursor:'pointer' }}>
+            <div style={{ fontFamily:'Georgia,serif', fontSize:'2.2rem', fontWeight:600, color:S.goldDark, lineHeight:1 }}>{pend.length}</div>
+            <div style={{ fontSize:'0.62rem', letterSpacing:'0.18em', textTransform:'uppercase', color:S.textLight, marginTop:'0.3rem' }}>Fără răspuns</div>
+          </div>
           {statCard(persons,'Persoane totale')}
         </div>
 
