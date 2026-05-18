@@ -1245,7 +1245,8 @@ export default function App() {
   const slug = new URLSearchParams(window.location.search).get('invite');
   const isAdmin = slug === 'admin';
 
-  const [page, setPage] = useState(isAdmin ? 'admin-login' : 'envelope');
+  const alreadyLoggedIn = isAdmin && sessionStorage.getItem('wedding_admin') === 'true';
+  const [page, setPage] = useState(isAdmin ? (alreadyLoggedIn ? 'dashboard' : 'admin-login') : 'envelope');
   const [guestName, setGuestName] = useState('Invitat');
   const [guestId, setGuestId] = useState(null);
   const [attending, setAttending] = useState(null);
@@ -1300,7 +1301,7 @@ export default function App() {
   if (page === 'invitation') return <InvitationPage guestName={guestName} onRSVP={() => setPage('rsvp')} onToggleMute={toggleMute} muted={muted} />;
   if (page === 'rsvp') return <RSVPPage guestId={guestId} onDone={(a) => { setAttending(a); setPage('thankyou'); }} onBack={() => setPage('invitation')} />;
   if (page === 'thankyou') return <ThankYouPage attending={attending} />;
-  if (page === 'admin-login') return <AdminLoginPage onLogin={() => setPage('dashboard')} onBack={() => setPage('invitation')} />;
-  if (page === 'dashboard') return <DashboardPage onLogout={() => setPage('invitation')} />;
+  if (page === 'admin-login') return <AdminLoginPage onLogin={() => { sessionStorage.setItem('wedding_admin','true'); setPage('dashboard'); }} onBack={() => setPage('invitation')} />;
+  if (page === 'dashboard') return <DashboardPage onLogout={() => { sessionStorage.removeItem('wedding_admin'); setPage('invitation'); }} />;
   return null;
 }
