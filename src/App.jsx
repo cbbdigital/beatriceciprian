@@ -254,7 +254,7 @@ function InvitationPage({ guestName, onRSVP, onToggleMute, muted }) {
             <div style={{ flex:1, maxWidth:60, height:'0.5px', background:S.borderStrong }} />
           </div>
           <p style={gs.salutation}>Dragă,</p>
-          <p style={gs.guestName}>{guestName || 'Invitat Drag'}</p>
+          <p style={gs.guestName}>{guestName || 'Invitat'}</p>
         </FadeIn>
         <FadeIn delay={600}><Divider /></FadeIn>
         <FadeIn delay={900}>
@@ -1174,7 +1174,7 @@ function EnvelopeIntro({ onOpen, guestName, onStartAudio, onToggleMute, muted })
           textShadow: '0 0 30px rgba(184,146,74,0.4)',
           animation: 'nameGlow 3s ease-in-out infinite',
         }}>
-          Dragă, {guestName || 'Invitat Drag'}
+          Dragă, {guestName || 'Invitat'}
         </p>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.8rem', opacity: 0.7 }}>
           <div style={{ width: 40, height: '0.5px', background: 'rgba(184,146,74,0.5)' }} />
@@ -1246,7 +1246,7 @@ export default function App() {
   const isAdmin = slug === 'admin';
 
   const [page, setPage] = useState(isAdmin ? 'admin-login' : 'envelope');
-  const [guestName, setGuestName] = useState('Ion Popescu');
+  const [guestName, setGuestName] = useState('Invitat');
   const [guestId, setGuestId] = useState(null);
   const [attending, setAttending] = useState(null);
 
