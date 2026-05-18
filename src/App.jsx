@@ -672,6 +672,10 @@ function SeatingEditor({ guests }) {
   const [selectedSeat, setSelectedSeat] = useState(null); // {tableId, seatIndex}
   const [editingTable, setEditingTable] = useState(null);
   const canvasRef = useRef(null);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({x:0, y:0});
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({x:0, y:0});
   const ROOM_PRESETS = [
     { label: 'Pătrat', w: 800, h: 800 },
     { label: 'Dreptunghiular', w: 1000, h: 600 },
@@ -743,16 +747,27 @@ function SeatingEditor({ guests }) {
   };
 
   // Mouse drag handlers
+  const onCanvasMouseDown = (e) => {
+    if (draggingTable) return;
+    setIsPanning(true);
+    setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+  };
+
   const onMouseDown = (e, table) => {
     e.preventDefault();
+    e.stopPropagation();
     const rect = canvasRef.current.getBoundingClientRect();
-    const scaleX = CANVAS_W / rect.width;
-    const scaleY = CANVAS_H / rect.height;
+    const scaleX = (CANVAS_W * zoom) / rect.width;
+    const scaleY = (CANVAS_H * zoom) / rect.height;
     setDraggingTable(table.id);
-    setDragOffset({ x: (e.clientX - rect.left)*scaleX - table.x, y: (e.clientY - rect.top)*scaleY - table.y });
+    setDragOffset({ x: (e.clientX - rect.left)*scaleX/zoom - pan.x/zoom - table.x, y: (e.clientY - rect.top)*scaleY/zoom - pan.y/zoom - table.y });
   };
 
   const onMouseMove = (e) => {
+    if (isPanning && !draggingTable) {
+      setPan({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
+      return;
+    }
     if (!draggingTable) return;
     const rect = canvasRef.current.getBoundingClientRect();
     const scaleX = CANVAS_W / rect.width;
@@ -763,6 +778,7 @@ function SeatingEditor({ guests }) {
   };
 
   const onMouseUp = () => {
+    setIsPanning(false);
     if (draggingTable) {
       const t = tables.find(t => t.id===draggingTable);
       if (t) saveTablePos(t.id, t.x, t.y);
@@ -834,13 +850,25 @@ function SeatingEditor({ guests }) {
       </div>
 
       {/* Canvas */}
+      {/* Zoom controls */}
+      <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.5rem' }}>
+        <span style={{ fontSize:'0.6rem', letterSpacing:'0.15em', textTransform:'uppercase', color:S.textLight }}>Zoom:</span>
+        <button onClick={() => setZoom(z => Math.min(3, +(z+0.25).toFixed(2)))} style={{ width:28, height:28, border:`1px solid ${S.border}`, background:'#fff', cursor:'pointer', fontSize:'1rem', color:S.goldDark, display:'flex', alignItems:'center', justifyContent:'center' }}>+</button>
+        <span style={{ fontSize:'0.75rem', color:S.textMid, minWidth:36, textAlign:'center' }}>{Math.round(zoom*100)}%</span>
+        <button onClick={() => setZoom(z => Math.max(0.25, +(z-0.25).toFixed(2)))} style={{ width:28, height:28, border:`1px solid ${S.border}`, background:'#fff', cursor:'pointer', fontSize:'1rem', color:S.goldDark, display:'flex', alignItems:'center', justifyContent:'center' }}>−</button>
+        <button onClick={() => { setZoom(1); setPan({x:0,y:0}); }} style={{ padding:'0.2rem 0.6rem', border:`1px solid ${S.border}`, background:'#fff', cursor:'pointer', fontSize:'0.65rem', letterSpacing:'0.1em', textTransform:'uppercase', color:S.textMid, fontFamily:'inherit' }}>Reset</button>
+        <span style={{ fontSize:'0.6rem', color:S.textLight, marginLeft:'0.5rem' }}>scroll = zoom · drag pe fundal = pan</span>
+      </div>
+
       <div
         ref={canvasRef}
+        onMouseDown={onCanvasMouseDown}
         onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseUp}
         onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
-        style={{ width:'100%', aspectRatio:`${CANVAS_W}/${CANVAS_H}`, background:'#f8f4ee', border:`1px solid ${S.border}`, position:'relative', overflow:'hidden', cursor: draggingTable ? 'grabbing' : 'default', userSelect:'none', touchAction:'none' }}
+        onWheel={e => { e.preventDefault(); setZoom(z => Math.max(0.25, Math.min(3, +(z - e.deltaY*0.001).toFixed(3)))); }}
+        style={{ width:'100%', aspectRatio:`${CANVAS_W}/${CANVAS_H}`, background:'#f8f4ee', border:`1px solid ${S.border}`, position:'relative', overflow:'hidden', cursor: draggingTable ? 'grabbing' : isPanning ? 'grabbing' : 'grab', userSelect:'none', touchAction:'none' }}
       >
-        <svg viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`} style={{ width:'100%', height:'100%', position:'absolute', top:0, left:0 }}>
+        <svg viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`} style={{ width:'100%', height:'100%', position:'absolute', top:0, left:0, transform:`scale(${zoom}) translate(${pan.x/zoom}px,${pan.y/zoom}px)`, transformOrigin:'0 0' }}>
           {/* Grid dots */}
           {Array.from({length:18},(_,i)=>Array.from({length:12},(_,j)=>(
             <circle key={`${i}-${j}`} cx={i*52+26} cy={j*52+26} r="1.5" fill={S.border} opacity="0.5"/>
