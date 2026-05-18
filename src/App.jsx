@@ -989,6 +989,9 @@ function DashboardPage({ onLogout }) {
   const [guests, setGuests] = useState([]);
   const [filter, setFilter] = useState('all');
   const [view, setView] = useState('guests'); // 'guests' | 'seating'
+  const [seatAssignments, setSeatAssignments] = useState([]);
+  const [search, setSearch] = useState('');
+  const [seatTables, setSeatTables] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
@@ -1000,8 +1003,14 @@ function DashboardPage({ onLogout }) {
 
   const load = async () => {
     setLoading(true);
-    const data = await fetchGuests();
+    const [data, tables, assignments] = await Promise.all([
+      fetchGuests(),
+      fetchTables(),
+      fetchAssignments(),
+    ]);
     setGuests(Array.isArray(data) ? data : []);
+    setSeatTables(Array.isArray(tables) ? tables : []);
+    setSeatAssignments(Array.isArray(assignments) ? assignments : []);
     setLoading(false);
   };
 
@@ -1098,7 +1107,7 @@ function DashboardPage({ onLogout }) {
     setGuests(prev => prev.map(g => g.id === id ? { ...g, link_sent: !current } : g));
   };
 
-  const filtered = guests.filter(g => filter==='all'?true:filter==='yes'?g.attending===true:filter==='no'?g.attending===false:g.attending===null);
+  const filtered = guests.filter(g => (filter==='all'?true:filter==='yes'?g.attending===true:filter==='no'?g.attending===false:g.attending===null) && (!search || g.name.toLowerCase().includes(search.toLowerCase())));
   const yes = guests.filter(g=>g.attending===true);
   const no = guests.filter(g=>g.attending===false);
   const pend = guests.filter(g=>g.attending===null);
@@ -1192,8 +1201,15 @@ function DashboardPage({ onLogout }) {
         {view === 'guests' && <>
         {/* Table */}
         <div style={{ fontSize:'0.65rem', letterSpacing:'0.2em', textTransform:'uppercase', color:S.gold, marginBottom:'0.6rem', paddingBottom:'0.4rem', borderBottom:`1px solid ${S.border}` }}>Lista invitaților</div>
-        <div style={{ display:'flex', gap:'0.4rem', marginBottom:'0.8rem', flexWrap:'wrap' }}>
-          {filterBtn('Toți','all')}{filterBtn('Confirmați','yes')}{filterBtn('Refuzați','no')}{filterBtn('În așteptare','pending')}
+        <div style={{ display:'flex', gap:'0.6rem', marginBottom:'0.8rem', flexWrap:'wrap', alignItems:'center' }}>
+          <input
+            value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Caută după nume..."
+            style={{ padding:'0.3rem 0.7rem', border:`1px solid ${S.border}`, fontFamily:'inherit', fontSize:'0.8rem', color:S.text, outline:'none', minWidth:180, background:'#fff' }}
+          />
+          <div style={{ display:'flex', gap:'0.4rem', flexWrap:'wrap' }}>
+            {filterBtn('Toți','all')}{filterBtn('Confirmați','yes')}{filterBtn('Refuzați','no')}{filterBtn('În așteptare','pending')}
+          </div>
         </div>
 
         <div style={{ background:'#fff', border:`1px solid ${S.border}`, overflowX:'auto' }}>
@@ -1205,7 +1221,7 @@ function DashboardPage({ onLogout }) {
             <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.82rem' }}>
               <thead>
                 <tr>
-                  {['Nume','Status','Persoane','Dietă','Mesaj','Trimis','Link',''].map(h=>(
+                  {['Nume','Status','Persoane','Masă','Mesaj','Trimis','Link',''].map(h=>(
                     <th key={h} style={{ padding:'0.65rem 0.9rem', textAlign:'left', fontSize:'0.6rem', letterSpacing:'0.15em', textTransform:'uppercase', color:S.textLight, borderBottom:`1px solid ${S.border}`, whiteSpace:'nowrap', fontWeight:400 }}>{h}</th>
                   ))}
                 </tr>
@@ -1213,8 +1229,9 @@ function DashboardPage({ onLogout }) {
               <tbody>
                 {filtered.map(g => {
                   const badge = g.attending===true ? { bg:'rgba(39,174,96,0.1)', color:'#1a6b3c', label:'Vine ✓' } : g.attending===false ? { bg:'rgba(231,76,60,0.1)', color:'#922b21', label:'Nu vine' } : { bg:'rgba(184,146,74,0.15)', color:S.goldDark, label:'În așteptare' };
-                  const diet = (g.dietary_preferences||[]).join(', ') || '—';
                   const persons = g.attending ? `${g.adults||0}a + ${g.children||0}c` : '—';
+                  const seatA = seatAssignments.find(a => a.guest_id === g.id);
+                  const seatTable = seatA ? seatTables.find(t => t.id === seatA.table_id) : null;
                   const link = `${window.location.origin}/?invite=${encodeURIComponent(g.slug)}`;
                   return (
                     <tr key={g.id} style={{ borderBottom:`1px solid ${S.border}` }}>
@@ -1223,7 +1240,13 @@ function DashboardPage({ onLogout }) {
                         <span style={{ display:'inline-block', padding:'0.18rem 0.55rem', fontSize:'0.62rem', letterSpacing:'0.08em', textTransform:'uppercase', background:badge.bg, color:badge.color }}>{badge.label}</span>
                       </td>
                       <td style={{ padding:'0.7rem 0.9rem', color:S.textMid }}>{persons}</td>
-                      <td style={{ padding:'0.7rem 0.9rem', fontSize:'0.74rem', color:S.textMid, maxWidth:140, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={diet}>{diet}</td>
+                      <td style={{ padding:'0.7rem 0.9rem', fontSize:'0.74rem', color: seatTable ? S.goldDark : S.textLight }}>
+                        {seatTable ? (
+                          <span style={{ display:'inline-block', padding:'0.15rem 0.5rem', background:'rgba(184,146,74,0.1)', border:`1px solid ${S.border}`, fontSize:'0.68rem', letterSpacing:'0.05em' }}>
+                            {seatTable.name}
+                          </span>
+                        ) : '—'}
+                      </td>
                       <td style={{ padding:'0.7rem 0.9rem', fontSize:'0.74rem', color:S.textMid, maxWidth:120, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={g.message||''}>{g.message ? (g.message.length>28?g.message.slice(0,28)+'…':g.message) : '—'}</td>
                       <td style={{ padding:'0.7rem 0.9rem', textAlign:'center' }}>
                         <div
