@@ -384,14 +384,32 @@ function RSVPPage({ guestId, onDone, onBack }) {
 
         {attending === true && (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-              {[{ label: 'Adulți', val: adults, set: setAdults }, { label: 'Copii', val: children, set: setChildren }].map(f => (
-                <div key={f.label}>
-                  <label style={{ display: 'block', fontSize: '0.68rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: S.textMid, marginBottom: '0.5rem' }}>{f.label}</label>
-                  <input type="number" min="0" max="10" value={f.val} onChange={e => f.set(parseInt(e.target.value)||0)} style={inp} />
+            {[{ label: 'Adulți', val: adults, set: setAdults, min: 1, max: 8 }, { label: 'Copii', val: children, set: setChildren, min: 0, max: 8 }].map(f => (
+              <div key={f.label} style={{ marginBottom: '1.2rem' }}>
+                <label style={{ display: 'block', fontSize: '0.68rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: S.textMid, marginBottom: '0.7rem' }}>{f.label}</label>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  {Array.from({ length: f.max - f.min + 1 }, (_, i) => f.min + i).map(n => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => f.set(n)}
+                      style={{
+                        width: '3rem', height: '3rem',
+                        border: `1px solid ${f.val === n ? S.gold : S.border}`,
+                        background: f.val === n ? S.gold : '#fff',
+                        color: f.val === n ? '#fff' : S.textMid,
+                        fontFamily: 'inherit', fontSize: '1rem',
+                        cursor: 'pointer', borderRadius: 0,
+                        fontWeight: f.val === n ? 600 : 400,
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {n}
+                    </button>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
 
           </>
         )}
@@ -790,31 +808,29 @@ function EnvelopeIntro({ onOpen, guestName }) {
             <circle cx="45" cy="45" r="36" fill="#c9a84c"/>
             {/* Wax texture */}
             <circle cx="45" cy="45" r="34" fill="#b8924a" opacity="0.6"/>
-            {/* Wheat stalks (like in photo) */}
-            <g stroke="#7a5c20" strokeWidth="1.2" fill="none" strokeLinecap="round">
-              {/* Left stalk */}
-              <path d="M38 65 C36 55 34 45 36 32"/>
-              <path d="M36 32 C33 28 30 30 31 34"/>
-              <path d="M36 32 C34 27 36 24 38 27"/>
-              <path d="M36 36 C33 32 30 33 31 37"/>
-              <path d="M36 36 C34 31 37 29 38 33"/>
-              <path d="M36 40 C33 37 31 38 32 42"/>
-              <path d="M36 40 C35 36 37 34 38 37"/>
-              <path d="M36 44 C34 41 32 43 33 46"/>
-              <path d="M36 44 C35 41 37 39 38 42"/>
-              {/* Right stalk */}
-              <path d="M50 65 C51 55 52 45 50 32"/>
-              <path d="M50 32 C52 28 55 30 54 34"/>
-              <path d="M50 32 C52 27 50 24 48 27"/>
-              <path d="M50 36 C53 32 56 33 55 37"/>
-              <path d="M50 36 C52 31 49 29 48 33"/>
-              <path d="M50 40 C53 37 55 38 54 42"/>
-              <path d="M50 40 C52 36 49 34 48 37"/>
-              <path d="M50 44 C52 41 54 43 53 46"/>
-              <path d="M50 44 C52 41 49 39 48 42"/>
-              {/* Binding */}
-              <path d="M38 58 Q44 55 50 58" strokeWidth="1.5"/>
-              <path d="M38 60 Q44 57 50 60" strokeWidth="1.5"/>
+            {/* Elegant heart with flourishes */}
+            <g fill="none" strokeLinecap="round" strokeLinejoin="round">
+              {/* Main heart */}
+              <path d="M45 58 C45 58 28 47 28 37 C28 31 33 27 38 27 C41 27 44 29 45 31 C46 29 49 27 52 27 C57 27 62 31 62 37 C62 47 45 58 45 58Z" fill="#7a5c20" opacity="0.85"/>
+              {/* Inner highlight */}
+              <path d="M45 54 C45 54 31 44 31 37 C31 33 35 30 38 30 C41 30 43 32 45 34" stroke="#c9a84c" strokeWidth="0.8" opacity="0.5"/>
+              {/* Top flourish left */}
+              <path d="M33 30 C30 25 25 24 24 20" stroke="#7a5c20" strokeWidth="1" opacity="0.7"/>
+              <path d="M24 20 C26 19 28 20 28 22" stroke="#7a5c20" strokeWidth="0.8" opacity="0.6"/>
+              <circle cx="23" cy="19" r="1.2" fill="#7a5c20" opacity="0.6"/>
+              {/* Top flourish right */}
+              <path d="M57 30 C60 25 65 24 66 20" stroke="#7a5c20" strokeWidth="1" opacity="0.7"/>
+              <path d="M66 20 C64 19 62 20 62 22" stroke="#7a5c20" strokeWidth="0.8" opacity="0.6"/>
+              <circle cx="67" cy="19" r="1.2" fill="#7a5c20" opacity="0.6"/>
+              {/* Bottom flourish */}
+              <path d="M45 58 C45 62 43 65 45 68" stroke="#7a5c20" strokeWidth="0.8" opacity="0.6"/>
+              <path d="M45 68 C43 67 41 68 42 70" stroke="#7a5c20" strokeWidth="0.8" opacity="0.5"/>
+              <path d="M45 68 C47 67 49 68 48 70" stroke="#7a5c20" strokeWidth="0.8" opacity="0.5"/>
+              <circle cx="41" cy="71" r="1" fill="#7a5c20" opacity="0.5"/>
+              <circle cx="49" cy="71" r="1" fill="#7a5c20" opacity="0.5"/>
+              {/* Small dots around */}
+              <circle cx="32" cy="24" r="1" fill="#7a5c20" opacity="0.5"/>
+              <circle cx="58" cy="24" r="1" fill="#7a5c20" opacity="0.5"/>
             </g>
           </svg>
         </div>
