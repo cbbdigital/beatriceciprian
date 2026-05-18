@@ -1175,10 +1175,29 @@ function EnvelopeIntro({ onOpen, guestName, onStartAudio, onToggleMute, muted })
 }
 
 export default function App() {
-  const [page, setPage] = useState('envelope');
+  const slug = new URLSearchParams(window.location.search).get('invite');
+  const isAdmin = slug === 'admin';
+
+  const [page, setPage] = useState(isAdmin ? 'admin-login' : 'envelope');
   const [guestName, setGuestName] = useState('Ion Popescu');
-  const [guestId] = useState(null);
+  const [guestId, setGuestId] = useState(null);
   const [attending, setAttending] = useState(null);
+
+  // Load guest name from slug
+  useEffect(() => {
+    if (!slug || slug === 'admin') return;
+    fetch(`${SUPABASE_URL}/rest/v1/guests?select=id,name&slug=eq.${slug}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data && data[0]) {
+        setGuestName(data[0].name);
+        setGuestId(data[0].id);
+      }
+    })
+    .catch(() => {});
+  }, []);
   const [muted, setMuted] = useState(false);
   const globalAudioRef = useRef(null);
 
