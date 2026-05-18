@@ -672,7 +672,14 @@ function SeatingEditor({ guests }) {
   const [selectedSeat, setSelectedSeat] = useState(null); // {tableId, seatIndex}
   const [editingTable, setEditingTable] = useState(null);
   const canvasRef = useRef(null);
-  const CANVAS_W = 900, CANVAS_H = 600;
+  const ROOM_PRESETS = [
+    { label: 'Pătrat', w: 800, h: 800 },
+    { label: 'Dreptunghiular', w: 1000, h: 600 },
+    { label: 'Lung', w: 1200, h: 500 },
+    { label: 'Lat', w: 700, h: 900 },
+  ];
+  const [canvasDims, setCanvasDims] = useState({ w: 1000, h: 600 });
+  const CANVAS_W = canvasDims.w, CANVAS_H = canvasDims.h;
 
   useEffect(() => { loadAll(); }, []);
 
@@ -799,13 +806,31 @@ function SeatingEditor({ guests }) {
 
   return (
     <div style={{ maxWidth:900, margin:'0 auto' }}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1rem', flexWrap:'wrap', gap:'0.5rem' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.8rem', flexWrap:'wrap', gap:'0.5rem' }}>
         <div style={{ fontSize:'0.65rem', letterSpacing:'0.2em', textTransform:'uppercase', color:S.gold }}>
           Plan sală · drag pentru a muta mesele
         </div>
         <button onClick={addTable} style={{ padding:'0.45rem 1.2rem', background:S.gold, border:'none', color:'#fff', fontFamily:'inherit', fontSize:'0.7rem', letterSpacing:'0.15em', textTransform:'uppercase', cursor:'pointer' }}>
           + Masă nouă
         </button>
+      </div>
+      <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.8rem', flexWrap:'wrap' }}>
+        <span style={{ fontSize:'0.6rem', letterSpacing:'0.15em', textTransform:'uppercase', color:S.textLight }}>Forma sălii:</span>
+        {ROOM_PRESETS.map(p => (
+          <button key={p.label} onClick={() => setCanvasDims({w:p.w, h:p.h})}
+            style={{ padding:'0.25rem 0.7rem', border:`1px solid ${canvasDims.w===p.w&&canvasDims.h===p.h?S.gold:S.border}`, background: canvasDims.w===p.w&&canvasDims.h===p.h?'rgba(184,146,74,0.08)':'#fff', fontFamily:'inherit', fontSize:'0.65rem', letterSpacing:'0.1em', color: canvasDims.w===p.w&&canvasDims.h===p.h?S.goldDark:S.textMid, cursor:'pointer' }}>
+            {p.label}
+          </button>
+        ))}
+        <span style={{ fontSize:'0.6rem', color:S.textLight, marginLeft:'0.5rem' }}>
+          sau: <input type="number" value={canvasDims.w} min="500" max="2000" step="50"
+            onChange={e => setCanvasDims(d=>({...d, w:parseInt(e.target.value)||d.w}))}
+            style={{ width:60, padding:'0.2rem 0.4rem', border:`1px solid ${S.border}`, fontFamily:'inherit', fontSize:'0.75rem', color:S.text, outline:'none' }}/>
+          {' × '}
+          <input type="number" value={canvasDims.h} min="300" max="1500" step="50"
+            onChange={e => setCanvasDims(d=>({...d, h:parseInt(e.target.value)||d.h}))}
+            style={{ width:60, padding:'0.2rem 0.4rem', border:`1px solid ${S.border}`, fontFamily:'inherit', fontSize:'0.75rem', color:S.text, outline:'none' }}/>
+        </span>
       </div>
 
       {/* Canvas */}
