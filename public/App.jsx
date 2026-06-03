@@ -62,10 +62,18 @@ const sb = {
 };
 
 async function fetchGuests() {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/dashboard_view?select=*&order=created_at.desc`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
-  });
-  return await res.json();
+  const [view, guestsRaw] = await Promise.all([
+    fetch(`${SUPABASE_URL}/rest/v1/dashboard_view?select=*&order=created_at.desc`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+    }).then(r => r.json()),
+    fetch(`${SUPABASE_URL}/rest/v1/guests?select=id,link_sent`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+    }).then(r => r.json()),
+  ]);
+  // Merge link_sent into view data
+  const sentMap = {};
+  if (Array.isArray(guestsRaw)) guestsRaw.forEach(g => { sentMap[g.id] = g.link_sent; });
+  return Array.isArray(view) ? view.map(g => ({ ...g, link_sent: sentMap[g.id] || false })) : [];
 }
 
 async function insertRSVP(payload) {
