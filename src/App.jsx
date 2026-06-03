@@ -1139,6 +1139,28 @@ function DashboardPage({ onLogout }) {
     await load();
   };
 
+  const updateStatus = async (id, attending) => {
+    // Upsert rsvp_response
+    const existing = await fetch(`${SUPABASE_URL}/rest/v1/rsvp_responses?guest_id=eq.${id}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+    }).then(r => r.json());
+
+    if (existing && existing.length > 0) {
+      await fetch(`${SUPABASE_URL}/rest/v1/rsvp_responses?guest_id=eq.${id}`, {
+        method: 'PATCH',
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attending })
+      });
+    } else {
+      await fetch(`${SUPABASE_URL}/rest/v1/rsvp_responses`, {
+        method: 'POST',
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guest_id: id, attending, adults: attending ? 1 : 0, children: 0 })
+      });
+    }
+    await load();
+  };
+
   const saveGuestName = async (id, name) => {
     if (!name.trim()) return;
     await fetch(`${SUPABASE_URL}/rest/v1/guests?id=eq.${id}`, {
@@ -1320,7 +1342,26 @@ function DashboardPage({ onLogout }) {
                     )}
                   </td>
                       <td style={{ padding:'0.7rem 0.9rem' }}>
-                        <span style={{ display:'inline-block', padding:'0.18rem 0.55rem', fontSize:'0.62rem', letterSpacing:'0.08em', textTransform:'uppercase', background:badge.bg, color:badge.color }}>{badge.label}</span>
+                        <select
+                          value={g.attending === true ? 'yes' : g.attending === false ? 'no' : 'pending'}
+                          onChange={e => updateStatus(g.id, e.target.value === 'yes' ? true : e.target.value === 'no' ? false : null)}
+                          style={{
+                            padding:'0.2rem 0.4rem',
+                            border:`1px solid ${badge.color}`,
+                            background: badge.bg,
+                            color: badge.color,
+                            fontFamily:'inherit',
+                            fontSize:'0.62rem',
+                            letterSpacing:'0.08em',
+                            cursor:'pointer',
+                            outline:'none',
+                            borderRadius:0,
+                          }}
+                        >
+                          <option value="yes">Vine ✓</option>
+                          <option value="no">Nu vine</option>
+                          <option value="pending">În așteptare</option>
+                        </select>
                       </td>
                       <td style={{ padding:'0.7rem 0.9rem', color:S.textMid }}>{persons}</td>
                       <td style={{ padding:'0.7rem 0.9rem', fontSize:'0.74rem', color: seatTable ? S.goldDark : S.textLight }}>
