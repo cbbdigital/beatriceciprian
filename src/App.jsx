@@ -748,7 +748,8 @@ function SeatingEditor({ guests }) {
 
   // Mouse drag handlers
   const onCanvasMouseDown = (e) => {
-    if (draggingTable) return;
+    // Only pan if clicking the canvas background (not a table group)
+    if (e.target.closest && e.target.closest('[data-table]')) return;
     setIsPanning(true);
     setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
   };
@@ -756,11 +757,17 @@ function SeatingEditor({ guests }) {
   const onMouseDown = (e, table) => {
     e.preventDefault();
     e.stopPropagation();
+    setIsPanning(false);
     const rect = canvasRef.current.getBoundingClientRect();
-    const scaleX = (CANVAS_W * zoom) / rect.width;
-    const scaleY = (CANVAS_H * zoom) / rect.height;
+    const scaleX = CANVAS_W / rect.width;
+    const scaleY = CANVAS_H / rect.height;
+    // Account for zoom and pan
+    const mx = (e.clientX - rect.left) * scaleX;
+    const my = (e.clientY - rect.top) * scaleY;
+    const wx = (mx - pan.x) / zoom;
+    const wy = (my - pan.y) / zoom;
     setDraggingTable(table.id);
-    setDragOffset({ x: (e.clientX - rect.left)*scaleX/zoom - pan.x/zoom - table.x, y: (e.clientY - rect.top)*scaleY/zoom - pan.y/zoom - table.y });
+    setDragOffset({ x: wx - table.x, y: wy - table.y });
   };
 
   const onMouseMove = (e) => {
@@ -772,8 +779,12 @@ function SeatingEditor({ guests }) {
     const rect = canvasRef.current.getBoundingClientRect();
     const scaleX = CANVAS_W / rect.width;
     const scaleY = CANVAS_H / rect.height;
-    const x = Math.max(60, Math.min(CANVAS_W-60, (e.clientX - rect.left)*scaleX - dragOffset.x));
-    const y = Math.max(60, Math.min(CANVAS_H-60, (e.clientY - rect.top)*scaleY - dragOffset.y));
+    const mx = (e.clientX - rect.left) * scaleX;
+    const my = (e.clientY - rect.top) * scaleY;
+    const wx = (mx - pan.x) / zoom;
+    const wy = (my - pan.y) / zoom;
+    const x = Math.max(40, Math.min(CANVAS_W-40, wx - dragOffset.x));
+    const y = Math.max(40, Math.min(CANVAS_H-40, wy - dragOffset.y));
     setTables(prev => prev.map(t => t.id===draggingTable ? {...t, x, y} : t));
   };
 
@@ -878,6 +889,7 @@ function SeatingEditor({ guests }) {
             const seats = table.seats || 10;
             return (
               <g key={table.id}
+                data-table={table.id}
                 onMouseDown={e => onMouseDown(e, table)}
                 onTouchStart={e => onTouchStart(e, table)}
                 style={{ cursor:'grab' }}
@@ -1019,6 +1031,7 @@ function DashboardPage({ onLogout }) {
   const [view, setView] = useState('guests'); // 'guests' | 'seating'
   const [seatAssignments, setSeatAssignments] = useState([]);
   const [search, setSearch] = useState('');
+  const [editingGuest, setEditingGuest] = useState(null); // {id, name}
   const [seatTables, setSeatTables] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
@@ -1124,6 +1137,17 @@ function DashboardPage({ onLogout }) {
     });
     showToast(`${name} a fost șters.`);
     await load();
+  };
+
+  const saveGuestName = async (id, name) => {
+    if (!name.trim()) return;
+    await fetch(`${SUPABASE_URL}/rest/v1/guests?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name.trim() })
+    });
+    setGuests(prev => prev.map(g => g.id === id ? { ...g, name: name.trim() } : g));
+    setEditingGuest(null);
   };
 
   const toggleLinkSent = async (id, current) => {
@@ -1241,11 +1265,11 @@ function DashboardPage({ onLogout }) {
         {view === 'guests' && <>
         {/* Table */}
         <div style={{ fontSize:'0.65rem', letterSpacing:'0.2em', textTransform:'uppercase', color:S.gold, marginBottom:'0.6rem', paddingBottom:'0.4rem', borderBottom:`1px solid ${S.border}` }}>Lista invitaților</div>
-        <div style={{ display:'flex', gap:'0.6rem', marginBottom:'0.8rem', flexWrap:'wrap', alignItems:'center' }}>
+        <div style={{ display:'flex', flexDirection:'column', gap:'0.6rem', marginBottom:'0.8rem' }}>
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Caută după nume..."
-            style={{ padding:'0.3rem 0.7rem', border:`1px solid ${S.border}`, fontFamily:'inherit', fontSize:'0.8rem', color:S.text, outline:'none', minWidth:180, background:'#fff' }}
+            style={{ padding:'0.5rem 0.8rem', border:`1px solid ${S.border}`, fontFamily:'inherit', fontSize:'0.9rem', color:S.text, outline:'none', width:'100%', boxSizing:'border-box', background:'#fff' }}
           />
           <div style={{ display:'flex', gap:'0.4rem', flexWrap:'wrap' }}>
             {filterBtn('Toți','all')}{filterBtn('Confirmați','yes')}{filterBtn('Refuzați','no')}{filterBtn('În așteptare','pending')}
@@ -1275,7 +1299,26 @@ function DashboardPage({ onLogout }) {
                   const link = `${window.location.origin}/?invite=${encodeURIComponent(g.slug)}`;
                   return (
                     <tr key={g.id} style={{ borderBottom:`1px solid ${S.border}` }}>
-                      <td style={{ padding:'0.7rem 0.9rem', fontWeight:500, color:S.text }}>{g.name}</td>
+                      <td style={{ padding:'0.7rem 0.9rem' }}>
+                    {editingGuest?.id === g.id ? (
+                      <div style={{ display:'flex', gap:'0.4rem', alignItems:'center' }}>
+                        <input
+                          autoFocus
+                          defaultValue={g.name}
+                          onKeyDown={e => { if (e.key==='Enter') saveGuestName(g.id, e.target.value); if (e.key==='Escape') setEditingGuest(null); }}
+                          style={{ padding:'0.25rem 0.5rem', border:`1px solid ${S.gold}`, fontFamily:'inherit', fontSize:'0.85rem', color:S.text, outline:'none', width:140 }}
+                        />
+                        <button onClick={e => saveGuestName(g.id, e.target.closest('td').querySelector('input').value)} style={{ background:'none', border:'none', cursor:'pointer', color:S.gold, fontSize:'0.75rem', fontFamily:'inherit' }}>✓</button>
+                        <button onClick={() => setEditingGuest(null)} style={{ background:'none', border:'none', cursor:'pointer', color:S.textLight, fontSize:'0.75rem', fontFamily:'inherit' }}>✕</button>
+                      </div>
+                    ) : (
+                      <span
+                        onClick={() => setEditingGuest({id:g.id, name:g.name})}
+                        style={{ fontWeight:500, color:S.text, cursor:'pointer', borderBottom:`1px dashed ${S.border}` }}
+                        title="Click pentru a edita"
+                      >{g.name}</span>
+                    )}
+                  </td>
                       <td style={{ padding:'0.7rem 0.9rem' }}>
                         <span style={{ display:'inline-block', padding:'0.18rem 0.55rem', fontSize:'0.62rem', letterSpacing:'0.08em', textTransform:'uppercase', background:badge.bg, color:badge.color }}>{badge.label}</span>
                       </td>
